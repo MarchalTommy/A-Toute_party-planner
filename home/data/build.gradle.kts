@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.martodev.atoute.home.data"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 26
