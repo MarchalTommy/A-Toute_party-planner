@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.atoute"
+    namespace = "com.martodev.atoute"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.atoute"
+        applicationId = "com.martodev.atoute"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
