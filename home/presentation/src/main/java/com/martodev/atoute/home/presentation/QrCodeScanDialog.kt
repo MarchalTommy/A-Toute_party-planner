@@ -1,5 +1,6 @@
 package com.martodev.atoute.home.presentation
 
+import android.Manifest
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,36 +13,44 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.material.icons.Icons
-import androidx.compose.ui.res.painterResource
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.martodev.atoute.home.presentation.camera.CameraPreview
 
 /**
  * Dialogue pour scanner un QR code et rejoindre un événement
- * Note: Ceci est un mockup. Dans une implémentation réelle,
- * il faudrait intégrer une bibliothèque comme ZXing et la caméra.
+ * Utilise CameraX et ML Kit pour détecter et analyser les codes QR
  */
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun QrCodeScanDialog(
     onDismiss: () -> Unit,
     onScanCompleted: (eventData: String) -> Unit
 ) {
-    // Dans une implémentation réelle, cette variable serait mise à jour par la bibliothèque de scan
-    var isScanning by remember { mutableStateOf(true) }
+    // État pour gérer les scans détectés afin d'éviter les doublons
+    var hasDetectedCode by remember { mutableStateOf(false) }
+    
+    // Gestion de la permission de caméra
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -72,19 +81,51 @@ fun QrCodeScanDialog(
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Aperçu de la caméra (simulé)
-                Box(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .align(Alignment.CenterHorizontally),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.qr_code_scanner),
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                // Affichage de la prévisualisation de la caméra ou demande de permission
+                if (cameraPermissionState.status.isGranted) {
+                    // Aperçu de la caméra avec analyse de QR code
+                    Box(
+                        modifier = Modifier
+                            .size(250.dp)
+                            .align(Alignment.CenterHorizontally),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CameraPreview(
+                            onQrCodeScanned = { qrCodeValue ->
+                                if (!hasDetectedCode) {
+                                    hasDetectedCode = true
+                                    onScanCompleted(qrCodeValue)
+                                }
+                            }
+                        )
+                        
+                        // Indicateur de scan actif
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(50.dp),
+                            color = MaterialTheme.colorScheme.tertiary,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                } else {
+                    // Vue de demande de permission
+                    Box(
+                        modifier = Modifier
+                            .size(250.dp)
+                            .align(Alignment.CenterHorizontally),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.qr_code_scanner),
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        // Demander automatiquement la permission
+                        LaunchedEffect(key1 = Unit) {
+                            cameraPermissionState.launchPermissionRequest()
+                        }
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -103,16 +144,25 @@ fun QrCodeScanDialog(
                     
                     Spacer(modifier = Modifier.width(8.dp))
                     
-                    // Dans une implémentation réelle, ce bouton serait pour tester un exemple
-                    Button(
-                        onClick = {
-                            // Simulation d'un scan réussi
-                            val mockData = "event-123|Fête d'Anniversaire|2024-05-25T18:00:00|123 Rue de Paris|0xFFE91E63"
-                            onScanCompleted(mockData)
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Simuler scan")
+                    // Bouton pour demander la permission si nécessaire
+                    if (!cameraPermissionState.status.isGranted) {
+                        Button(
+                            onClick = { cameraPermissionState.launchPermissionRequest() },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Autoriser la caméra")
+                        }
+                    } else {
+                        // Bouton de simulation pour le développement et les tests
+                        Button(
+                            onClick = {
+                                val mockData = "event-123|Fête d'Anniversaire|2024-05-25T18:00:00|123 Rue de Paris|0xFFE91E63"
+                                onScanCompleted(mockData)
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Simuler scan")
+                        }
                     }
                 }
             }
