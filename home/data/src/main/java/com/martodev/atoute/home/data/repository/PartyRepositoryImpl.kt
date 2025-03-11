@@ -78,16 +78,23 @@ class PartyRepositoryImpl(
     
     override suspend fun saveParty(party: Party) {
         if (!useMockData) {
+            // S'assurer que la fête a une couleur (utiliser une couleur aléatoire si non spécifiée)
+            val partyWithColor = if (party.color == null) {
+                party.copy(color = mockDataSource.getRandomPartyColor())
+            } else {
+                party
+            }
+            
             // Sauvegarde de la Party
-            partyDao.insertParty(party.toEntity())
+            partyDao.insertParty(partyWithColor.toEntity())
             
             // Sauvegarde des participants
-            party.participants.forEach { participantName ->
+            partyWithColor.participants.forEach { participantName ->
                 participantDao.insertParticipant(
                     ParticipantEntity(
                         // Ne pas définir l'ID car il est auto-généré (autoGenerate = true)
                         name = participantName,
-                        partyId = party.id
+                        partyId = partyWithColor.id
                     )
                 )
             }

@@ -4,15 +4,16 @@ import com.martodev.atoute.home.domain.model.Party
 import com.martodev.atoute.home.domain.repository.PartyRepository
 
 /**
- * Cas d'utilisation pour sauvegarder une party
+ * Cas d'utilisation pour sauvegarder une Party
  */
 class SavePartyUseCase(private val partyRepository: PartyRepository) {
-    
     /**
-     * Sauvegarde une party
-     * @param party La party à sauvegarder
+     * Sauvegarde une Party et retourne son ID
+     * @param party la Party à sauvegarder
+     * @return l'ID de la Party sauvegardée
      */
-    suspend operator fun invoke(party: Party) {
+    suspend operator fun invoke(party: Party): String {
         partyRepository.saveParty(party)
+        return party.id
     }
 } 

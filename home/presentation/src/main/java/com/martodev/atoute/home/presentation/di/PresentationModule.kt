@@ -11,24 +11,7 @@ import org.koin.dsl.module
 val homePresentationModule = module {
     
     // ViewModels
-    viewModel { 
-        HomeViewModel(
-            getPartiesUseCase = get(),
-            getPriorityTodosUseCase = get(),
-            updateTodoStatusUseCase = get(),
-            updateTodoPriorityUseCase = get()
-        ) 
-    }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
     
-    viewModel { 
-        PartyDetailViewModel(
-            getPartyDetailUseCase = get(),
-            getTodosByPartyUseCase = get(),
-            getToBuysByPartyUseCase = get(),
-            updateTodoStatusUseCase = get(),
-            updateTodoPriorityUseCase = get(),
-            updateToBuyStatusUseCase = get(),
-            updateToBuyPriorityUseCase = get()
-        ) 
-    }
+    viewModel { PartyDetailViewModel(get(), get(), get(), get(), get(), get(), get()) }
 } 

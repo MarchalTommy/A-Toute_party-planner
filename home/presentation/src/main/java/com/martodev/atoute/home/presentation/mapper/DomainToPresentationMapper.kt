@@ -19,7 +19,8 @@ fun DomainParty.toPresentation(): PresentationParty {
         description = this.description,
         participants = this.participants,
         todoCount = this.todoCount,
-        completedTodoCount = this.completedTodoCount
+        completedTodoCount = this.completedTodoCount,
+        color = this.color
     )
 }
 

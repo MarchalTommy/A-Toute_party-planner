@@ -64,7 +64,8 @@ class DatabaseInitializer(
                                 date = party.date,
                                 location = party.location,
                                 description = party.description,
-                                color = party.color,
+                                // Utiliser une couleur aléatoire si null
+                                color = party.color ?: mockDataSource.getRandomPartyColor(),
                                 todoCount = party.todoCount,
                                 completedTodoCount = party.completedTodoCount
                             )

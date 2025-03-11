@@ -113,12 +113,11 @@ fun PartyDetailScreen(
         
         // On détermine la couleur d'accent à utiliser
         val accentColor = remember(party.id) {
-            // Trouver une tâche associée à cette party pour obtenir sa couleur
-            val todo = uiState.todos.find { it.partyId == party.id }
-            if (todo?.partyColor != null) {
-                Color(todo.partyColor!!)
+            // Utiliser directement la couleur de la party si elle existe
+            if (party.color != null) {
+                Color(party.color!!)
             } else {
-                // Couleur par défaut si aucune tâche n'est associée
+                // Couleur par défaut si aucune couleur n'est définie pour la party
                 Color(0xFF6200EE) // Couleur primaire par défaut
             }
         }
@@ -354,7 +353,7 @@ private fun PartyInfoCard(
                 val remainingTasks = party.todoCount - party.completedTodoCount
                 Text(
                     text = when (remainingTasks) {
-                        0 -> "Terminé !"
+                        0 -> "Tout est prêt !"
                         1 -> "1 tâche restante"
                         else -> "$remainingTasks tâches restantes"
                     },

@@ -43,7 +43,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,6 +72,9 @@ fun HomeScreen(
     onAddPartyClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    // État pour contrôler l'affichage du dialogue de création d'événement
+    var showCreateEventDialog by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         HomeContent(
@@ -84,14 +89,24 @@ fun HomeScreen(
         
         // Bouton Flottant pour ajouter une party
         FloatingActionButton(
-            onClick = onAddPartyClick,
+            onClick = { showCreateEventDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
         ) {
             Icon(
                 imageVector = Icons.Rounded.Add,
-                contentDescription = "Ajouter une Party"
+                contentDescription = "Ajouter un Événement"
+            )
+        }
+        
+        // Dialogue de création d'événement
+        if (showCreateEventDialog) {
+            CreateEventDialog(
+                onDismiss = { showCreateEventDialog = false },
+                onCreateEvent = { title, date, location, color ->
+                    viewModel.createEvent(title, date, location, color)
+                }
             )
         }
     }
@@ -130,12 +145,12 @@ private fun HomeContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 64.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Text(
-                text = "Parties à venir",
+                text = "Évenements à venir",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -188,10 +203,9 @@ private fun PartyCard(
     daysUntil: Long,
     onClick: () -> Unit
 ) {
-    val accentColor = remember(party.id, todos) {
-        val associatedTodo = todos.find { it.partyId == party.id }
-        if (associatedTodo?.partyColor != null) {
-            Color(associatedTodo.partyColor)
+    val accentColor = remember(party.id) {
+        if (party.color != null) {
+            Color(party.color)
         } else {
             val hash = party.id.hashCode()
             Color(
@@ -305,7 +319,7 @@ private fun PartyCard(
                 val remainingTasks = party.todoCount - party.completedTodoCount
                 Text(
                     text = when (remainingTasks) {
-                        0 -> "Terminé !"
+                        0 -> "Tout est prêt !"
                         1 -> "1 tâche restante"
                         else -> "$remainingTasks tâches restantes"
                     },

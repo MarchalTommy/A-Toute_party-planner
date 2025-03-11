@@ -10,6 +10,7 @@ import com.martodev.atoute.home.domain.repository.TodoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 
 class TodoRepositoryImpl(
     private val todoDao: TodoDao,
@@ -24,8 +25,14 @@ class TodoRepositoryImpl(
         return if (useMockData) {
             flow { emit(mockDataSource.getTodos()) }
         } else {
+            // Utiliser combine pour associer chaque tâche à sa fête respective
+            // afin de récupérer la couleur de la fête
             todoDao.getAllTodos().map { todoEntities ->
-                todoEntities.map { it.toDomain() }
+                todoEntities.map { todoEntity ->
+                    // Récupérer la couleur de la fête associée de manière synchrone
+                    val partyEntity = partyDao.getPartyById(todoEntity.partyId)
+                    todoEntity.toDomain(partyColor = partyEntity?.color)
+                }
             }
         }
     }
@@ -34,8 +41,14 @@ class TodoRepositoryImpl(
         return if (useMockData) {
             flow { emit(mockDataSource.getTodos().filter { it.isPriority }) }
         } else {
+            // Utiliser combine pour associer chaque tâche à sa fête respective
+            // afin de récupérer la couleur de la fête
             todoDao.getPriorityTodos().map { todoEntities ->
-                todoEntities.map { it.toDomain() }
+                todoEntities.map { todoEntity ->
+                    // Récupérer la couleur de la fête associée de manière synchrone
+                    val partyEntity = partyDao.getPartyById(todoEntity.partyId)
+                    todoEntity.toDomain(partyColor = partyEntity?.color)
+                }
             }
         }
     }
@@ -44,8 +57,13 @@ class TodoRepositoryImpl(
         return if (useMockData) {
             flow { emit(mockDataSource.getTodos().filter { it.partyId == partyId }) }
         } else {
-            todoDao.getTodosByPartyId(partyId).map { todoEntities ->
-                todoEntities.map { it.toDomain() }
+            // Pour les tâches d'une fête spécifique, nous connaissons déjà la fête
+            // Récupérer d'abord la fête pour obtenir sa couleur
+            partyDao.getPartyWithDetailsById(partyId).combine(todoDao.getTodosByPartyId(partyId)) { partyWithDetails, todoEntities ->
+                val partyColor = partyWithDetails?.party?.color
+                todoEntities.map { todoEntity ->
+                    todoEntity.toDomain(partyColor = partyColor)
+                }
             }
         }
     }

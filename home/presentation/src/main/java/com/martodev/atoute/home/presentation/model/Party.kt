@@ -14,5 +14,6 @@ data class Party(
     val description: String = "",
     val participants: List<String> = mutableListOf(),
     val todoCount: Int = 0,
-    val completedTodoCount: Int = 0
+    val completedTodoCount: Int = 0,
+    val color: Long? = null
 ) 

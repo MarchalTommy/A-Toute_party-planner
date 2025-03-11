@@ -20,12 +20,38 @@ class MockDataSource {
         const val NEW_YEAR_PARTY_ID = "party-004"
         const val HOUSEWARMING_ID = "party-005"
         
-        // Couleurs prédéfinies pour les parties
-        const val PINK_COLOR = 0xFFE91E63 // Rose
-        const val BLUE_COLOR = 0xFF2196F3 // Bleu
-        const val GREEN_COLOR = 0xFF4CAF50 // Vert
-        const val PURPLE_COLOR = 0xFF9C27B0 // Violet
-        const val ORANGE_COLOR = 0xFFFF9800 // Orange
+        // Palette de couleurs vives pour les parties
+        val PARTY_COLORS = listOf(
+            0xFFE91E63, // Rose
+            0xFF2196F3, // Bleu
+            0xFF4CAF50, // Vert
+            0xFF9C27B0, // Violet
+            0xFFFF9800, // Orange
+            0xFFFF5722, // Rouge orangé
+            0xFF673AB7, // Indigo
+            0xFF3F51B5, // Bleu foncé
+            0xFF00BCD4, // Cyan
+            0xFF009688, // Vert-bleu
+            0xFF8BC34A, // Vert clair
+            0xFFCDDC39, // Vert lime
+            0xFFFFEB3B, // Jaune
+            0xFFFFC107, // Ambre
+            0xFF795548, // Marron
+            0xFF607D8B  // Bleu gris
+        )
+    }
+    
+    // Couleurs assignées aux parties pour assurer la cohérence entre les parties et les todos/toBuys
+    private val partyColorMap = mutableMapOf<String, Long>()
+    
+    init {
+        // Pré-assignment des couleurs aux parties existantes pour assurer la cohérence
+        // Cela est nécessaire car les todos et toBuys référencent déjà ces couleurs
+        partyColorMap[BIRTHDAY_PARTY_ID] = 0xFFE91E63 // Rose
+        partyColorMap[GAME_NIGHT_ID] = 0xFF2196F3 // Bleu
+        partyColorMap[SUMMER_BBQ_ID] = 0xFF4CAF50 // Vert
+        partyColorMap[NEW_YEAR_PARTY_ID] = 0xFF9C27B0 // Violet
+        partyColorMap[HOUSEWARMING_ID] = 0xFFFF9800 // Orange
     }
     
     /**
@@ -43,7 +69,7 @@ class MockDataSource {
                 participants = listOf("Marc", "Sophie", "Thomas", "Léa", "Alexandre"),
                 todoCount = 4,
                 completedTodoCount = 1,
-                color = PINK_COLOR
+                color = partyColorMap[BIRTHDAY_PARTY_ID]
             ),
             Party(
                 id = GAME_NIGHT_ID,
@@ -55,7 +81,7 @@ class MockDataSource {
                 participants = listOf("Julien", "Emma", "Nicolas", "Clara"),
                 todoCount = 3,
                 completedTodoCount = 2,
-                color = BLUE_COLOR
+                color = partyColorMap[GAME_NIGHT_ID]
             ),
             Party(
                 id = SUMMER_BBQ_ID,
@@ -67,7 +93,7 @@ class MockDataSource {
                 participants = listOf("Paul", "Marie", "Antoine", "Sarah", "Lucie", "Maxime"),
                 todoCount = 5,
                 completedTodoCount = 0,
-                color = GREEN_COLOR
+                color = partyColorMap[SUMMER_BBQ_ID]
             ),
             Party(
                 id = NEW_YEAR_PARTY_ID,
@@ -78,7 +104,7 @@ class MockDataSource {
                 participants = listOf("Charlotte", "Hugo", "Camille", "Antoine"),
                 todoCount = 6,
                 completedTodoCount = 1,
-                color = PURPLE_COLOR
+                color = partyColorMap[NEW_YEAR_PARTY_ID]
             ),
             Party(
                 id = HOUSEWARMING_ID,
@@ -90,9 +116,26 @@ class MockDataSource {
                 participants = listOf("Mathilde", "Lucas", "Alice", "Nathan"),
                 todoCount = 4,
                 completedTodoCount = 3,
-                color = ORANGE_COLOR
+                color = partyColorMap[HOUSEWARMING_ID]
             )
         )
+    }
+    
+    /**
+     * Attribue une couleur aléatoire à une nouvelle fête
+     * @return couleur au format Long
+     */
+    fun getRandomPartyColor(): Long {
+        return PARTY_COLORS.random()
+    }
+    
+    /**
+     * Récupère la couleur d'une partie
+     * @param partyId l'ID de la partie
+     * @return couleur au format Long, ou null si la partie n'existe pas
+     */
+    fun getPartyColor(partyId: String): Long? {
+        return partyColorMap[partyId]
     }
     
     /**
@@ -107,7 +150,7 @@ class MockDataSource {
                 isCompleted = true,
                 assignedTo = "Marc",
                 partyId = BIRTHDAY_PARTY_ID,
-                partyColor = PINK_COLOR,
+                partyColor = partyColorMap[BIRTHDAY_PARTY_ID],
                 isPriority = true
             ),
             Todo(
@@ -116,7 +159,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Sophie",
                 partyId = BIRTHDAY_PARTY_ID,
-                partyColor = PINK_COLOR,
+                partyColor = partyColorMap[BIRTHDAY_PARTY_ID],
                 isPriority = false
             ),
             Todo(
@@ -125,7 +168,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Thomas",
                 partyId = BIRTHDAY_PARTY_ID,
-                partyColor = PINK_COLOR,
+                partyColor = partyColorMap[BIRTHDAY_PARTY_ID],
                 isPriority = true
             ),
             Todo(
@@ -134,7 +177,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Léa",
                 partyId = BIRTHDAY_PARTY_ID,
-                partyColor = PINK_COLOR,
+                partyColor = partyColorMap[BIRTHDAY_PARTY_ID],
                 isPriority = false
             ),
             
@@ -145,7 +188,7 @@ class MockDataSource {
                 isCompleted = true,
                 assignedTo = "Julien",
                 partyId = GAME_NIGHT_ID,
-                partyColor = BLUE_COLOR,
+                partyColor = partyColorMap[GAME_NIGHT_ID],
                 isPriority = false
             ),
             Todo(
@@ -154,7 +197,7 @@ class MockDataSource {
                 isCompleted = true,
                 assignedTo = "Emma",
                 partyId = GAME_NIGHT_ID,
-                partyColor = BLUE_COLOR,
+                partyColor = partyColorMap[GAME_NIGHT_ID],
                 isPriority = true
             ),
             Todo(
@@ -163,7 +206,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Nicolas",
                 partyId = GAME_NIGHT_ID,
-                partyColor = BLUE_COLOR,
+                partyColor = partyColorMap[GAME_NIGHT_ID],
                 isPriority = true
             ),
             
@@ -174,7 +217,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Paul",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = true
             ),
             Todo(
@@ -183,7 +226,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Marie",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = true
             ),
             Todo(
@@ -192,7 +235,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Antoine",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = false
             ),
             Todo(
@@ -201,7 +244,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Sarah",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = false
             ),
             Todo(
@@ -210,7 +253,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Lucie",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = false
             ),
             
@@ -221,7 +264,7 @@ class MockDataSource {
                 isCompleted = true,
                 assignedTo = "Charlotte",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = false
             ),
             Todo(
@@ -230,7 +273,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Hugo",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = true
             ),
             Todo(
@@ -239,7 +282,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Camille",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = false
             ),
             Todo(
@@ -248,7 +291,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Antoine",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = true
             ),
             Todo(
@@ -257,7 +300,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Charlotte",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = false
             ),
             Todo(
@@ -266,7 +309,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Hugo",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = false
             ),
             
@@ -277,7 +320,7 @@ class MockDataSource {
                 isCompleted = true,
                 assignedTo = "Mathilde",
                 partyId = HOUSEWARMING_ID,
-                partyColor = ORANGE_COLOR,
+                partyColor = partyColorMap[HOUSEWARMING_ID],
                 isPriority = true
             ),
             Todo(
@@ -286,7 +329,7 @@ class MockDataSource {
                 isCompleted = true,
                 assignedTo = "Lucas",
                 partyId = HOUSEWARMING_ID,
-                partyColor = ORANGE_COLOR,
+                partyColor = partyColorMap[HOUSEWARMING_ID],
                 isPriority = true
             ),
             Todo(
@@ -295,7 +338,7 @@ class MockDataSource {
                 isCompleted = true,
                 assignedTo = "Alice",
                 partyId = HOUSEWARMING_ID,
-                partyColor = ORANGE_COLOR,
+                partyColor = partyColorMap[HOUSEWARMING_ID],
                 isPriority = false
             ),
             Todo(
@@ -304,7 +347,7 @@ class MockDataSource {
                 isCompleted = false,
                 assignedTo = "Nathan",
                 partyId = HOUSEWARMING_ID,
-                partyColor = ORANGE_COLOR,
+                partyColor = partyColorMap[HOUSEWARMING_ID],
                 isPriority = false
             )
         )
@@ -324,7 +367,7 @@ class MockDataSource {
                 isPurchased = true,
                 assignedTo = "Marc",
                 partyId = BIRTHDAY_PARTY_ID,
-                partyColor = PINK_COLOR,
+                partyColor = partyColorMap[BIRTHDAY_PARTY_ID],
                 isPriority = true
             ),
             ToBuy(
@@ -335,7 +378,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Sophie",
                 partyId = BIRTHDAY_PARTY_ID,
-                partyColor = PINK_COLOR,
+                partyColor = partyColorMap[BIRTHDAY_PARTY_ID],
                 isPriority = true
             ),
             ToBuy(
@@ -346,7 +389,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Thomas",
                 partyId = BIRTHDAY_PARTY_ID,
-                partyColor = PINK_COLOR,
+                partyColor = partyColorMap[BIRTHDAY_PARTY_ID],
                 isPriority = false
             ),
             ToBuy(
@@ -357,7 +400,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Léa",
                 partyId = BIRTHDAY_PARTY_ID,
-                partyColor = PINK_COLOR,
+                partyColor = partyColorMap[BIRTHDAY_PARTY_ID],
                 isPriority = true
             ),
             
@@ -370,7 +413,7 @@ class MockDataSource {
                 isPurchased = true,
                 assignedTo = "Julien",
                 partyId = GAME_NIGHT_ID,
-                partyColor = BLUE_COLOR,
+                partyColor = partyColorMap[GAME_NIGHT_ID],
                 isPriority = false
             ),
             ToBuy(
@@ -381,7 +424,7 @@ class MockDataSource {
                 isPurchased = true,
                 assignedTo = "Emma",
                 partyId = GAME_NIGHT_ID,
-                partyColor = BLUE_COLOR,
+                partyColor = partyColorMap[GAME_NIGHT_ID],
                 isPriority = true
             ),
             ToBuy(
@@ -392,7 +435,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Nicolas",
                 partyId = GAME_NIGHT_ID,
-                partyColor = BLUE_COLOR,
+                partyColor = partyColorMap[GAME_NIGHT_ID],
                 isPriority = true
             ),
             ToBuy(
@@ -403,7 +446,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Clara",
                 partyId = GAME_NIGHT_ID,
-                partyColor = BLUE_COLOR,
+                partyColor = partyColorMap[GAME_NIGHT_ID],
                 isPriority = false
             ),
             
@@ -416,7 +459,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Paul",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = true
             ),
             ToBuy(
@@ -427,7 +470,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Marie",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = true
             ),
             ToBuy(
@@ -438,7 +481,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Antoine",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = false
             ),
             ToBuy(
@@ -449,7 +492,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Sarah",
                 partyId = SUMMER_BBQ_ID,
-                partyColor = GREEN_COLOR,
+                partyColor = partyColorMap[SUMMER_BBQ_ID],
                 isPriority = false
             ),
             
@@ -462,7 +505,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Charlotte",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = true
             ),
             ToBuy(
@@ -473,7 +516,7 @@ class MockDataSource {
                 isPurchased = true,
                 assignedTo = "Hugo",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = false
             ),
             ToBuy(
@@ -484,7 +527,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Camille",
                 partyId = NEW_YEAR_PARTY_ID,
-                partyColor = PURPLE_COLOR,
+                partyColor = partyColorMap[NEW_YEAR_PARTY_ID],
                 isPriority = true
             ),
             
@@ -497,7 +540,7 @@ class MockDataSource {
                 isPurchased = true,
                 assignedTo = "Mathilde",
                 partyId = HOUSEWARMING_ID,
-                partyColor = ORANGE_COLOR,
+                partyColor = partyColorMap[HOUSEWARMING_ID],
                 isPriority = true
             ),
             ToBuy(
@@ -508,7 +551,7 @@ class MockDataSource {
                 isPurchased = true,
                 assignedTo = "Lucas",
                 partyId = HOUSEWARMING_ID,
-                partyColor = ORANGE_COLOR,
+                partyColor = partyColorMap[HOUSEWARMING_ID],
                 isPriority = false
             ),
             ToBuy(
@@ -519,7 +562,7 @@ class MockDataSource {
                 isPurchased = true,
                 assignedTo = "Alice",
                 partyId = HOUSEWARMING_ID,
-                partyColor = ORANGE_COLOR,
+                partyColor = partyColorMap[HOUSEWARMING_ID],
                 isPriority = false
             ),
             ToBuy(
@@ -530,7 +573,7 @@ class MockDataSource {
                 isPurchased = false,
                 assignedTo = "Nathan",
                 partyId = HOUSEWARMING_ID,
-                partyColor = ORANGE_COLOR,
+                partyColor = partyColorMap[HOUSEWARMING_ID],
                 isPriority = false
             )
         )
