@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +62,7 @@ import com.martodev.atoute.home.presentation.model.Todo
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,7 +100,7 @@ fun HomeScreen(
             // Bouton pour scanner un QR code
             FloatingActionButton(
                 onClick = { viewModel.showQrScanDialog() },
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(56.dp),
                 containerColor = MaterialTheme.colorScheme.secondaryContainer
             ) {
                 Icon(
@@ -134,6 +136,14 @@ fun HomeScreen(
             QrCodeScanDialog(
                 onDismiss = viewModel::hideQrScanDialog,
                 onScanCompleted = viewModel::processScannedQrCode
+            )
+        }
+
+        // Afficher un message de succès si nécessaire
+        uiState.successMessage?.let { message ->
+            SuccessMessageBox(
+                message = message,
+                onDismiss = { viewModel.clearSuccessMessage() }
             )
         }
     }
@@ -479,6 +489,52 @@ private fun EmptyTodosCard() {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+/**
+ * Composant pour afficher un message de succès temporaire
+ */
+@Composable
+private fun SuccessMessageBox(
+    message: String,
+    onDismiss: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        tonalElevation = 4.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Fermeture automatique après quelques secondes
+        LaunchedEffect(message) {
+            delay(3000) // 3 secondes
+            onDismiss()
         }
     }
 }

@@ -462,18 +462,29 @@ class PartyDetailViewModel(
     fun generateEventShareData(): String? {
         val party = _uiState.value.party ?: return null
         
-        // Format: ID|TITLE|DATE_ISO|LOCATION|COLOR
-        return "${party.id}|${party.title}|${party.date}|${party.location}|${party.color}"
+        // Format complet incluant toutes les informations nécessaires pour dupliquer l'événement
+        // Format: ID|TITLE|DATE_ISO|LOCATION|COLOR|DESCRIPTION|PARTICIPANTS
+        val participantsData = party.participants.joinToString(",")
+        
+        return listOf(
+            party.id,
+            party.title,
+            party.date.toString(),
+            party.location,
+            party.color.toString(),
+            party.description,
+            participantsData
+        ).joinToString("|")
     }
 
     /**
      * Traite les données partagées via QR code pour rejoindre un événement.
-     * Format attendu : ID|TITLE|DATE_ISO|LOCATION|COLOR
+     * Format attendu : ID|TITLE|DATE_ISO|LOCATION|COLOR|DESCRIPTION|PARTICIPANTS
      */
     fun processScannedEventData(eventData: String): Boolean {
         try {
             val parts = eventData.split("|")
-            if (parts.size < 5) {
+            if (parts.size < 7) {
                 return false
             }
             
@@ -482,6 +493,8 @@ class PartyDetailViewModel(
             val dateStr = parts[2]
             val location = parts[3]
             val colorStr = parts[4]
+            val description = parts[5]
+            val participantsData = parts[6]
             
             // Dans une implémentation réelle, vous voudriez:
             // 1. Vérifier si l'événement existe déjà

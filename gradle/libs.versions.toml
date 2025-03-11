@@ -36,6 +36,8 @@ wallet = "19.4.0"
 wallet-button = "1.0.0"
 camerax = "1.4.1"
 mlkit-barcode = "17.3.0"
+zxing-core = "3.5.2"
+zxing-android-embedded = "4.3.0"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -156,6 +158,10 @@ camerax-extensions = { group = "androidx.camera", name = "camera-extensions", ve
 
 ## ML Kit
 mlkit-barcode = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkit-barcode" }
+
+## ZXing (QR Code)
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing-core" }
+zxing-android-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version.ref = "zxing-android-embedded" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

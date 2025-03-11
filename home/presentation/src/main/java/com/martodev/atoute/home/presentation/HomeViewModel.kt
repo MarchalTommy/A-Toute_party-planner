@@ -200,13 +200,18 @@ class HomeViewModel(
     }
     
     /**
-     * Traite les données d'un QR code scanné
+     * Traite les données d'un QR code scanné et crée un événement local
      */
     fun processScannedQrCode(eventData: String) {
         try {
             val parts = eventData.split("|")
-            if (parts.size < 5) {
-                _uiState.update { it.copy(error = "Format de QR code invalide", isQrScanDialogVisible = false) }
+            if (parts.size < 7) {
+                _uiState.update { 
+                    it.copy(
+                        error = "Format de QR code invalide", 
+                        isQrScanDialogVisible = false
+                    ) 
+                }
                 return
             }
             
@@ -215,23 +220,65 @@ class HomeViewModel(
             val dateStr = parts[2]
             val location = parts[3]
             val colorStr = parts[4]
+            val description = parts[5]
+            val participantsStr = parts[6]
             
-            // Dans une vraie implémentation, nous voudrions:
-            // 1. Vérifier si l'événement existe déjà
-            // 2. Créer l'événement s'il n'existe pas
-            // 3. Ajouter l'utilisateur actuel comme participant
-            
-            // Temporairement, nous affichons juste un message de succès
-            _uiState.update { 
-                it.copy(
-                    isQrScanDialogVisible = false,
-                    error = null
-                )
+            // Conversion des données
+            val date = try {
+                LocalDateTime.parse(dateStr)
+            } catch (e: Exception) {
+                LocalDateTime.now()
             }
             
-            // Recharger les événements pour afficher le nouvel événement
-            loadParties()
+            val color = try {
+                colorStr.toLong()
+            } catch (e: Exception) {
+                0xFF2196F3 // Couleur bleue par défaut
+            }
             
+            // Liste des participants (sans ajouter automatiquement le scan)
+            val participants = participantsStr.split(",").filter { it.isNotEmpty() }.toMutableList()
+            
+            // Créer l'événement localement 
+            viewModelScope.launch {
+                try {
+                    // Créer un nouvel événement avec un nouvel identifiant unique
+                    val newParty = DomainParty(
+                        id = UUID.randomUUID().toString(), // Générer un nouvel ID pour éviter les conflits
+                        title = title,
+                        date = date,
+                        location = location,
+                        description = description,
+                        participants = participants,
+                        color = color
+                    )
+                    
+                    // Sauvegarder dans le repository
+                    val partyId = savePartyUseCase(newParty)
+                    
+                    // Enregistrer l'utilisateur courant comme propriétaire
+                    authService.registerCurrentUserAsOwner(partyId)
+                    
+                    // Afficher une notification de succès
+                    _uiState.update { 
+                        it.copy(
+                            isQrScanDialogVisible = false,
+                            error = null,
+                            successMessage = "Événement \"$title\" ajouté avec succès !"
+                        )
+                    }
+                    
+                    // Recharger les événements pour afficher le nouvel événement
+                    loadParties()
+                } catch (e: Exception) {
+                    _uiState.update { 
+                        it.copy(
+                            error = "Erreur lors de la création de l'événement: ${e.message}",
+                            isQrScanDialogVisible = false
+                        )
+                    }
+                }
+            }
         } catch (e: Exception) {
             _uiState.update { 
                 it.copy(
@@ -240,6 +287,13 @@ class HomeViewModel(
                 )
             }
         }
+    }
+
+    /**
+     * Efface le message de succès après son affichage
+     */
+    fun clearSuccessMessage() {
+        _uiState.update { it.copy(successMessage = null) }
     }
 }
 
@@ -252,5 +306,6 @@ data class HomeUiState(
     val todos: List<Todo> = arrayListOf(),
     val error: String? = null,
     val isAddEventDialogVisible: Boolean = false,
-    val isQrScanDialogVisible: Boolean = false
+    val isQrScanDialogVisible: Boolean = false,
+    val successMessage: String? = null
 ) 

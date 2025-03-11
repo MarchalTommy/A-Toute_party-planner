@@ -19,6 +19,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        
+        // Configuration pour zxing-android-embedded
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -33,6 +36,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        // isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "1.8"
@@ -46,6 +50,13 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+    
+    // Configurations pour zxing-android-embedded
+    configurations.all {
+        resolutionStrategy {
+            force("com.google.zxing:core:3.5.2")
         }
     }
 }

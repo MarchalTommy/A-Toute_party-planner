@@ -82,6 +82,10 @@ dependencies {
     // ML Kit
     implementation(libs.mlkit.barcode)
     
+    // ZXing (QR Code)
+    implementation(libs.zxing.core)
+    implementation(libs.zxing.android.embedded)
+    
     // Permissions
     implementation(libs.accompanist.permissions)
     
