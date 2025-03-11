@@ -184,6 +184,63 @@ class HomeViewModel(
     fun isCurrentUserOwnerOfParty(partyId: String): Boolean {
         return authService.isCurrentUserOwnerOfParty(partyId)
     }
+
+    /**
+     * Affiche le dialogue de scan de QR Code
+     */
+    fun showQrScanDialog() {
+        _uiState.update { it.copy(isQrScanDialogVisible = true) }
+    }
+    
+    /**
+     * Masque le dialogue de scan de QR Code
+     */
+    fun hideQrScanDialog() {
+        _uiState.update { it.copy(isQrScanDialogVisible = false) }
+    }
+    
+    /**
+     * Traite les données d'un QR code scanné
+     */
+    fun processScannedQrCode(eventData: String) {
+        try {
+            val parts = eventData.split("|")
+            if (parts.size < 5) {
+                _uiState.update { it.copy(error = "Format de QR code invalide", isQrScanDialogVisible = false) }
+                return
+            }
+            
+            val id = parts[0]
+            val title = parts[1]
+            val dateStr = parts[2]
+            val location = parts[3]
+            val colorStr = parts[4]
+            
+            // Dans une vraie implémentation, nous voudrions:
+            // 1. Vérifier si l'événement existe déjà
+            // 2. Créer l'événement s'il n'existe pas
+            // 3. Ajouter l'utilisateur actuel comme participant
+            
+            // Temporairement, nous affichons juste un message de succès
+            _uiState.update { 
+                it.copy(
+                    isQrScanDialogVisible = false,
+                    error = null
+                )
+            }
+            
+            // Recharger les événements pour afficher le nouvel événement
+            loadParties()
+            
+        } catch (e: Exception) {
+            _uiState.update { 
+                it.copy(
+                    error = "Erreur lors du traitement du QR code: ${e.message}",
+                    isQrScanDialogVisible = false
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -194,5 +251,6 @@ data class HomeUiState(
     val parties: List<Party> = arrayListOf(),
     val todos: List<Todo> = arrayListOf(),
     val error: String? = null,
-    val isAddEventDialogVisible: Boolean = false
+    val isAddEventDialogVisible: Boolean = false,
+    val isQrScanDialogVisible: Boolean = false
 ) 

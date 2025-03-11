@@ -50,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -72,7 +73,7 @@ fun HomeScreen(
     onAddPartyClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
     // État pour contrôler l'affichage du dialogue de création d'événement
     var showCreateEventDialog by remember { mutableStateOf(false) }
 
@@ -81,25 +82,43 @@ fun HomeScreen(
             uiState = uiState,
             onPartyClick = onPartyClick,
             onTodoClick = onTodoClick,
-            onTodoStatusChange = { todoId, isCompleted -> 
+            onTodoStatusChange = { todoId, isCompleted ->
                 viewModel.updateTodoStatus(todoId, isCompleted)
             },
             calculateDaysUntil = viewModel::calculateDaysUntil
         )
-        
-        // Bouton Flottant pour ajouter une party
-        FloatingActionButton(
-            onClick = { showCreateEventDialog = true },
+
+        // Boutons flottants en bas à droite
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Add,
-                contentDescription = "Ajouter un Événement"
-            )
+            // Bouton pour scanner un QR code
+            FloatingActionButton(
+                onClick = { viewModel.showQrScanDialog() },
+                modifier = Modifier.size(48.dp),
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.qr_code_scanner),
+                    contentDescription = "Scanner un QR code"
+                )
+            }
+
+            // Bouton pour ajouter un événement
+            FloatingActionButton(
+                onClick = { showCreateEventDialog = true },
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = "Ajouter un Événement"
+                )
+            }
         }
-        
+
         // Dialogue de création d'événement
         if (showCreateEventDialog) {
             CreateEventDialog(
@@ -107,6 +126,14 @@ fun HomeScreen(
                 onCreateEvent = { title, date, location, color ->
                     viewModel.createEvent(title, date, location, color)
                 }
+            )
+        }
+
+        // Dialogue de scan QR code
+        if (uiState.isQrScanDialogVisible) {
+            QrCodeScanDialog(
+                onDismiss = viewModel::hideQrScanDialog,
+                onScanCompleted = viewModel::processScannedQrCode
             )
         }
     }
@@ -216,7 +243,7 @@ private fun PartyCard(
             )
         }
     }
-    
+
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -235,7 +262,7 @@ private fun PartyCard(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .size(12.dp)
@@ -243,9 +270,9 @@ private fun PartyCard(
                         .background(accentColor)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -260,9 +287,9 @@ private fun PartyCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
@@ -282,9 +309,9 @@ private fun PartyCard(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -300,10 +327,10 @@ private fun PartyCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             if (party.todoCount > 0) {
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 LinearProgressIndicator(
                     progress = { party.completedTodoCount.toFloat() / party.todoCount },
                     modifier = Modifier
@@ -313,9 +340,9 @@ private fun PartyCard(
                     color = accentColor,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 val remainingTasks = party.todoCount - party.completedTodoCount
                 Text(
                     text = when (remainingTasks) {
@@ -359,9 +386,9 @@ private fun TodoCard(
                     .height(40.dp)
                     .background(accentColor)
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Box(
                 modifier = Modifier
                     .size(24.dp)

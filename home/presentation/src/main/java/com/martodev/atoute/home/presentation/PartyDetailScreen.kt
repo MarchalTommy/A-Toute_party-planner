@@ -25,14 +25,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -154,8 +157,23 @@ fun PartyDetailScreen(
                 onTodoPriorityChange = viewModel::updateTodoPriority,
                 onToBuyPriorityChange = viewModel::updateToBuyPriority,
                 onMapClick = { onMapClick(party.location) },
-                onDirectionsClick = { onDirectionsClick(party.location) }
+                onDirectionsClick = { onDirectionsClick(party.location) },
+                onAddTodo = viewModel::addTodo,
+                onAddToBuy = viewModel::addToBuy,
+                onShareEvent = viewModel::shareEvent
             )
+            
+            // Affichage du dialogue de partage si nécessaire
+            if (uiState.isShareDialogVisible) {
+                val shareData = viewModel.generateEventShareData()
+                if (shareData != null) {
+                    QrCodeShareDialog(
+                        eventName = party.title,
+                        eventShareData = shareData,
+                        onDismiss = viewModel::hideShareDialog
+                    )
+                }
+            }
         }
     }
     
@@ -170,17 +188,16 @@ fun PartyDetailScreen(
         }
     }
     
-    // Affichage de l'erreur si présente
-    if (uiState.error != null) {
-        Log.d("PartyDetailScreen", "Affichage de l'erreur: ${uiState.error}")
+    // Affichage de l'erreur si nécessaire
+    uiState.error?.let { error ->
+        Log.d("PartyDetailScreen", "Affichage de l'erreur: $error")
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Erreur: ${uiState.error}",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyLarge
+                text = "Erreur: $error",
+                color = MaterialTheme.colorScheme.error
             )
         }
     }
@@ -199,7 +216,10 @@ private fun PartyDetailContent(
     onTodoPriorityChange: (String, Boolean) -> Unit,
     onToBuyPriorityChange: (String, Boolean) -> Unit,
     onMapClick: () -> Unit,
-    onDirectionsClick: () -> Unit
+    onDirectionsClick: () -> Unit,
+    onAddTodo: (String, String?) -> Unit,
+    onAddToBuy: (String, Int, Float?, String?) -> Unit,
+    onShareEvent: () -> Unit
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         // Carte principale avec les informations de base
@@ -240,17 +260,19 @@ private fun PartyDetailContent(
         
         // Contenu basé sur l'onglet sélectionné
         when (selectedTabIndex) {
-            0 -> PartyDetailsTab(party = party, onMapClick = onMapClick, onDirectionsClick = onDirectionsClick)
+            0 -> PartyDetailsTab(party = party, onMapClick = onMapClick, onDirectionsClick = onDirectionsClick, onShareEvent = onShareEvent)
             1 -> PartyParticipantsTab(participants = party.participants)
             2 -> PartyTodosTab(
                 todos = todos, 
                 onTodoStatusChange = onTodoStatusChange,
-                onTodoPriorityChange = onTodoPriorityChange
+                onTodoPriorityChange = onTodoPriorityChange,
+                onAddTodo = onAddTodo
             )
             3 -> PartyToBuysTab(
-                toBuys = toBuys, 
+                toBuys = toBuys,
                 onToBuyStatusChange = onToBuyStatusChange,
-                onToBuyPriorityChange = onToBuyPriorityChange
+                onToBuyPriorityChange = onToBuyPriorityChange,
+                onAddToBuy = onAddToBuy
             )
         }
     }
@@ -369,7 +391,8 @@ private fun PartyInfoCard(
 private fun PartyDetailsTab(
     party: Party,
     onMapClick: () -> Unit,
-    onDirectionsClick: () -> Unit
+    onDirectionsClick: () -> Unit,
+    onShareEvent: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -394,87 +417,89 @@ private fun PartyDetailsTab(
             Spacer(modifier = Modifier.height(16.dp))
         }
         
-        // Carte pour afficher le lieu (simulée)
+        // Adresse
+        Text(
+            text = "Lieu",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = party.location,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            ElevatedCard(
+                onClick = onMapClick,
+                modifier = Modifier.weight(1f),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(vertical = 8.dp, horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Place,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Voir la carte")
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            ElevatedCard(
+                onClick = onDirectionsClick,
+                modifier = Modifier.weight(1f),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(vertical = 8.dp, horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Place,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Itinéraire")
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Bouton de partage
         ElevatedCard(
+            onClick = onShareEvent,
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "Lieu",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                Icon(
+                    imageVector = Icons.Filled.Share,
+                    contentDescription = null
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Placeholder pour la carte (à remplacer par une vraie carte)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = party.location,
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                // Boutons pour interagir avec la carte
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    ElevatedCard(
-                        onClick = onMapClick,
-                        modifier = Modifier.weight(1f),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(vertical = 8.dp, horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Place,
-                                contentDescription = null
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Voir la carte")
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    ElevatedCard(
-                        onClick = onDirectionsClick,
-                        modifier = Modifier.weight(1f),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(vertical = 8.dp, horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Place,
-                                contentDescription = null
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Itinéraire")
-                        }
-                    }
-                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Partager cet événement", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -575,16 +600,22 @@ private fun PartyParticipantsTab(
 private fun PartyTodosTab(
     todos: List<Todo>,
     onTodoStatusChange: (String, Boolean) -> Unit,
-    onTodoPriorityChange: (String, Boolean) -> Unit
+    onTodoPriorityChange: (String, Boolean) -> Unit,
+    onAddTodo: (String, String?) -> Unit
 ) {
-    LazyColumn(
+    var showAddTodoDialog by remember { mutableStateOf(false) }
+    
+    Column(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -600,52 +631,33 @@ private fun PartyTodosTab(
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { showAddTodoDialog = true }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Ajouter une tâche"
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Ajouter")
+            }
         }
         
-        if (todos.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Aucune tâche pour le moment",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             items(todos) { todo ->
-                val accentColor = if (todo.partyColor != null) Color(todo.partyColor) else MaterialTheme.colorScheme.primary
-                
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp, horizontal = 16.dp),
+                            .padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Bande verticale colorée
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(36.dp)
-                                .background(accentColor)
-                        )
-                        
-                        Spacer(modifier = Modifier.width(12.dp))
-                        
                         Checkbox(
                             checked = todo.isCompleted,
                             onCheckedChange = { isChecked -> onTodoStatusChange(todo.id, isChecked) }
@@ -687,22 +699,38 @@ private fun PartyTodosTab(
             }
         }
     }
+    
+    if (showAddTodoDialog) {
+        CreateTodoDialog(
+            onDismiss = { showAddTodoDialog = false },
+            onCreateTodo = { title, assignedTo ->
+                onAddTodo(title, assignedTo)
+                showAddTodoDialog = false
+            }
+        )
+    }
 }
 
 @Composable
 private fun PartyToBuysTab(
     toBuys: List<ToBuy>,
     onToBuyStatusChange: (String, Boolean) -> Unit,
-    onToBuyPriorityChange: (String, Boolean) -> Unit
+    onToBuyPriorityChange: (String, Boolean) -> Unit,
+    onAddToBuy: (String, Int, Float?, String?) -> Unit
 ) {
-    LazyColumn(
+    var showAddToBuyDialog by remember { mutableStateOf(false) }
+    
+    Column(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -712,33 +740,29 @@ private fun PartyToBuysTab(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Liste d'achats",
+                    text = "Articles à acheter",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { showAddToBuyDialog = true }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Ajouter un article"
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Ajouter")
+            }
         }
         
-        if (toBuys.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Aucun article à acheter pour le moment",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             items(toBuys) { toBuy ->
                 val accentColor = if (toBuy.partyColor != null) Color(toBuy.partyColor) else MaterialTheme.colorScheme.primary
                 
@@ -842,5 +866,15 @@ private fun PartyToBuysTab(
                 }
             }
         }
+    }
+    
+    if (showAddToBuyDialog) {
+        CreateToBuyDialog(
+            onDismiss = { showAddToBuyDialog = false },
+            onCreateToBuy = { title, quantity, estimatedPrice, assignedTo ->
+                onAddToBuy(title, quantity, estimatedPrice, assignedTo)
+                showAddToBuyDialog = false
+            }
+        )
     }
 } 

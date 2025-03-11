@@ -9,6 +9,8 @@ import com.martodev.atoute.home.domain.model.Todo
 import com.martodev.atoute.home.domain.usecase.GetPartyDetailUseCase
 import com.martodev.atoute.home.domain.usecase.GetToBuysByPartyUseCase
 import com.martodev.atoute.home.domain.usecase.GetTodosByPartyUseCase
+import com.martodev.atoute.home.domain.usecase.SaveToBuyUseCase
+import com.martodev.atoute.home.domain.usecase.SaveTodoUseCase
 import com.martodev.atoute.home.domain.usecase.UpdateToBuyPriorityUseCase
 import com.martodev.atoute.home.domain.usecase.UpdateToBuyStatusUseCase
 import com.martodev.atoute.home.domain.usecase.UpdateTodoPriorityUseCase
@@ -37,7 +39,9 @@ class PartyDetailViewModel(
     private val updateTodoStatusUseCase: UpdateTodoStatusUseCase,
     private val updateTodoPriorityUseCase: UpdateTodoPriorityUseCase,
     private val updateToBuyStatusUseCase: UpdateToBuyStatusUseCase,
-    private val updateToBuyPriorityUseCase: UpdateToBuyPriorityUseCase
+    private val updateToBuyPriorityUseCase: UpdateToBuyPriorityUseCase,
+    private val saveTodoUseCase: SaveTodoUseCase,
+    private val saveToBuyUseCase: SaveToBuyUseCase
 ) : ViewModel() {
 
     // État UI actuel
@@ -390,6 +394,109 @@ class PartyDetailViewModel(
             )
         )
     }
+
+    /**
+     * Ajoute une nouvelle tâche pour cet événement
+     */
+    fun addTodo(title: String, assignedTo: String? = null) {
+        val currentParty = _uiState.value.party ?: return
+        
+        val newTodo = Todo(
+            id = UUID.randomUUID().toString(),
+            title = title,
+            isCompleted = false,
+            assignedTo = assignedTo,
+            partyId = currentParty.id,
+            partyColor = currentParty.color,
+            isPriority = false
+        )
+        
+        viewModelScope.launch {
+            saveTodoUseCase(newTodo)
+            // La mise à jour du UI State est automatique via les flows
+        }
+    }
+    
+    /**
+     * Ajoute un nouvel article à acheter pour cet événement
+     */
+    fun addToBuy(title: String, quantity: Int = 1, estimatedPrice: Float? = null, assignedTo: String? = null) {
+        val currentParty = _uiState.value.party ?: return
+        
+        val newToBuy = ToBuy(
+            id = UUID.randomUUID().toString(),
+            title = title,
+            quantity = quantity,
+            estimatedPrice = estimatedPrice,
+            isPurchased = false,
+            assignedTo = assignedTo,
+            partyId = currentParty.id,
+            partyColor = currentParty.color,
+            isPriority = false
+        )
+        
+        viewModelScope.launch {
+            saveToBuyUseCase(newToBuy)
+            // La mise à jour du UI State est automatique via les flows
+        }
+    }
+    
+    /**
+     * Affiche le dialogue de partage d'événement
+     */
+    fun shareEvent() {
+        _uiState.update { it.copy(isShareDialogVisible = true) }
+    }
+    
+    /**
+     * Masque le dialogue de partage d'événement
+     */
+    fun hideShareDialog() {
+        _uiState.update { it.copy(isShareDialogVisible = false) }
+    }
+    
+    /**
+     * Génère une chaîne de caractères contenant les informations de l'événement
+     * pour le partage via QR code
+     */
+    fun generateEventShareData(): String? {
+        val party = _uiState.value.party ?: return null
+        
+        // Format: ID|TITLE|DATE_ISO|LOCATION|COLOR
+        return "${party.id}|${party.title}|${party.date}|${party.location}|${party.color}"
+    }
+
+    /**
+     * Traite les données partagées via QR code pour rejoindre un événement.
+     * Format attendu : ID|TITLE|DATE_ISO|LOCATION|COLOR
+     */
+    fun processScannedEventData(eventData: String): Boolean {
+        try {
+            val parts = eventData.split("|")
+            if (parts.size < 5) {
+                return false
+            }
+            
+            val id = parts[0]
+            val title = parts[1]
+            val dateStr = parts[2]
+            val location = parts[3]
+            val colorStr = parts[4]
+            
+            // Dans une implémentation réelle, vous voudriez:
+            // 1. Vérifier si l'événement existe déjà
+            // 2. Créer l'événement s'il n'existe pas
+            // 3. Ajouter l'utilisateur actuel comme participant
+            
+            // Nous simulons simplement ici un appel réussi
+            Log.d("PartyDetailViewModel", "Événement scanné: $title ($id)")
+            
+            return true
+        } catch (e: Exception) {
+            Log.e("PartyDetailViewModel", "Erreur lors du traitement des données de l'événement", e)
+            return false
+        }
+    }
 }
 
 /**
@@ -400,5 +507,6 @@ data class PartyDetailUiState(
     val party: Party? = null,
     val todos: List<Todo> = emptyList(),
     val toBuys: List<ToBuy> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val isShareDialogVisible: Boolean = false
 ) 

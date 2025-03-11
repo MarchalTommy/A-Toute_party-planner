@@ -13,5 +13,5 @@ val homePresentationModule = module {
     // ViewModels
     viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
     
-    viewModel { PartyDetailViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { PartyDetailViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
 } 
