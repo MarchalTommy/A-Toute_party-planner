@@ -41,6 +41,7 @@ zxing-android-embedded = "4.3.0"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines-core" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 play-service-wallet = { group = "com.google.android.gms", name = "play-services-wallet", version.ref = "wallet" }

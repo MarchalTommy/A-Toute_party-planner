@@ -34,12 +34,12 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         // isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -66,6 +66,9 @@ dependencies {
     implementation(project(":home:presentation"))
     implementation(project(":home:domain"))
     implementation(project(":home:data"))
+    implementation(project(":party:presentation"))
+    implementation(project(":party:domain"))
+    implementation(project(":party:data"))
 
     // Core
     implementation(libs.core.ktx)
@@ -78,12 +81,18 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.common.ktx)
+    implementation(libs.navigation.compose)
     
     // Koin pour l'injection de dépendances
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.core)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
+    
+    // ZXing pour le scanning de QR code
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.google.zxing:core:3.5.2")
     
     // Tests
     testImplementation(libs.junit)
