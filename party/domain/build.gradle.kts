@@ -33,10 +33,19 @@ android {
 }
 
 dependencies {
-
+    // Core Android
     implementation(libs.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
+
+    // Koin - Injection de dépendances
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines)
+    implementation(libs.kotlinx.coroutines.core)
+
+    // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)

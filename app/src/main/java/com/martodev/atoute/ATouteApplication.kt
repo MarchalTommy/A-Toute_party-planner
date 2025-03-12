@@ -5,6 +5,9 @@ import com.martodev.atoute.home.data.db.DatabaseInitializer
 import com.martodev.atoute.home.data.di.homeDataModule
 import com.martodev.atoute.home.domain.di.homeDomainModule
 import com.martodev.atoute.home.presentation.di.homePresentationModule
+import com.martodev.atoute.party.data.di.partyDataModule
+import com.martodev.atoute.party.presentation.di.partyPresentationModule
+import com.martodev.atoute.party.domain.di.partyDomainModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,16 +21,16 @@ import org.koin.java.KoinJavaComponent.inject
  * Application principale qui initialise les dépendances Koin
  */
 class ATouteApplication : Application() {
-    
+
     // Scope pour les opérations de l'application
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    
+
     // Lazy injection pour éviter les dépendances circulaires
     private val databaseInitializer: DatabaseInitializer by inject(DatabaseInitializer::class.java)
-    
+
     override fun onCreate() {
         super.onCreate()
-        
+
         // Initialisation de Koin
         startKoin {
             // Logger pour le debug
@@ -40,15 +43,20 @@ class ATouteApplication : Application() {
                     // Modules du feature Home
                     homeDataModule,
                     homeDomainModule,
-                    homePresentationModule
+                    homePresentationModule,
+
+                    // Modules du feature Party
+                    partyDomainModule,
+                    partyDataModule,
+                    partyPresentationModule
                 )
             )
         }
-        
+
         // Initialisation de la base de données avec les données mockées
         initDatabase()
     }
-    
+
     /**
      * Initialise la base de données avec les données mockées
      */
