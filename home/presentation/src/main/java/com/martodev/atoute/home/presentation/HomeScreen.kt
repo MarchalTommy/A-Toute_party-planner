@@ -7,11 +7,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,6 +40,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -68,55 +74,52 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    modifier: Modifier = Modifier,
     viewModel: HomeViewModel = koinViewModel(),
     onPartyClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    // État pour contrôler l'affichage du dialogue de création d'événement
     var showCreateEventDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Gérer les messages d'erreur
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            // Ne pas effacer l'erreur automatiquement pour le moment
+        }
+    }
+    
+    // Gérer les messages de succès
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSuccessMessage()
+        }
+    }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        HomeContent(
-            uiState = uiState,
-            onPartyClick = onPartyClick,
-            onTodoStatusChange = { todoId, isCompleted ->
-                viewModel.updateTodoStatus(todoId, isCompleted)
-            },
-            calculateDaysUntil = viewModel::calculateDaysUntil
-        )
-
-        // Boutons flottants en bas à droite
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Bouton pour scanner un QR code
-            FloatingActionButton(
-                onClick = { viewModel.showQrScanDialog() },
-                modifier = Modifier.size(56.dp),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.qr_code_scanner),
-                    contentDescription = "Scanner un QR code"
-                )
-            }
-
-            // Bouton pour ajouter un événement
+    Scaffold(
+        floatingActionButton = {
             FloatingActionButton(
                 onClick = { showCreateEventDialog = true },
-                modifier = Modifier.size(56.dp)
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Add,
-                    contentDescription = "Ajouter un Événement"
+                    contentDescription = "Ajouter un événement",
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets.statusBars.only(WindowInsetsSides.Top)
+    ) { paddingValues ->
+        HomeContent(
+            uiState = uiState,
+            onPartyClick = onPartyClick,
+            onTodoStatusChange = viewModel::updateTodoStatus,
+            calculateDaysUntil = viewModel::calculateDaysUntil,
+            modifier = Modifier.padding(paddingValues)
+        )
 
         // Dialogue de création d'événement
         if (showCreateEventDialog) {
@@ -124,6 +127,7 @@ fun HomeScreen(
                 onDismiss = { showCreateEventDialog = false },
                 onCreateEvent = { title, date, location, color ->
                     viewModel.createEvent(title, date, location, color)
+                    showCreateEventDialog = false
                 }
             )
         }
@@ -135,14 +139,6 @@ fun HomeScreen(
                 onScanCompleted = viewModel::processScannedQrCode
             )
         }
-
-        // Afficher un message de succès si nécessaire
-        uiState.successMessage?.let { message ->
-            SuccessMessageBox(
-                message = message,
-                onDismiss = { viewModel.clearSuccessMessage() }
-            )
-        }
     }
 }
 
@@ -151,7 +147,8 @@ private fun HomeContent(
     uiState: HomeUiState,
     onPartyClick: (String) -> Unit,
     onTodoStatusChange: (String, Boolean) -> Unit,
-    calculateDaysUntil: (LocalDateTime) -> Long
+    calculateDaysUntil: (LocalDateTime) -> Long,
+    modifier: Modifier = Modifier
 ) {
     if (uiState.isLoading) {
         Box(
@@ -177,9 +174,9 @@ private fun HomeContent(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 64.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(16.dp)
     ) {
         item {
             Text(

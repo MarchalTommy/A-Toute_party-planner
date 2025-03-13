@@ -15,4 +15,5 @@ val authDomainModule = module {
     factory { SignOutUseCase(get()) }
     factory { UpdateUserPreferencesUseCase(get()) }
     factory { UpdatePremiumStatusUseCase(get()) }
+    factory { GetCurrentUserPremiumStatusUseCase(get()) }
 } 

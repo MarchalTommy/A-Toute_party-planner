@@ -9,7 +9,8 @@ data class HomeUiState(
     val todos: List<Todo> = listOf(),
     val toBuys: List<ToBuy> = listOf(),
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+    val error: String? = null,
     val isQrScanDialogVisible: Boolean = false,
-    val qrScanResult: String? = null
+    val qrScanResult: String? = null,
+    val successMessage: String? = null
 ) 

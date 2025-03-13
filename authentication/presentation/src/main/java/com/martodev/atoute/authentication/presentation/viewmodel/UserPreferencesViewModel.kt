@@ -65,26 +65,41 @@ class UserPreferencesViewModel(
      * @param preferences Nouvelles préférences
      */
     fun updatePreferences(preferences: UserPreferences) {
-        val userId = _state.value.user?.id ?: return
+        // Mise à jour optimiste de l'UI immédiatement - toujours faire cette mise à jour
+        _state.update { 
+            it.copy(
+                preferences = preferences,
+                error = null
+            ) 
+        }
         
+        // Si l'utilisateur n'a pas d'ID, on se contente de la mise à jour UI (mode temporaire/anonyme)
+        val userId = _state.value.user?.id
+        if (userId.isNullOrBlank()) {
+            // On ne peut pas sauvegarder pour un utilisateur sans ID, mais l'UI est mise à jour
+            return
+        }
+        
+        // Si l'utilisateur a un ID, on procède à la sauvegarde en base de données
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            
-            val result = updateUserPreferencesUseCase(userId, preferences)
-            
-            when (result) {
-                is AuthResult.Success -> {
-                    _state.update { 
-                        it.copy(
-                            isLoading = false,
-                            user = result.user,
-                            preferences = result.user.preferences
-                        )
+            try {
+                val result = updateUserPreferencesUseCase(userId, preferences)
+                
+                when (result) {
+                    is AuthResult.Success -> {
+                        _state.update { 
+                            it.copy(
+                                user = result.user,
+                                preferences = result.user.preferences
+                            )
+                        }
+                    }
+                    is AuthResult.Error -> {
+                        _state.update { it.copy(error = result.message) }
                     }
                 }
-                is AuthResult.Error -> {
-                    _state.update { it.copy(isLoading = false, error = result.message) }
-                }
+            } catch (e: Exception) {
+                _state.update { it.copy(error = "Erreur lors de la mise à jour: ${e.message}") }
             }
         }
     }
@@ -95,24 +110,55 @@ class UserPreferencesViewModel(
      * @param isPremium Nouveau statut premium
      */
     fun updatePremiumStatus(isPremium: Boolean) {
-        val userId = _state.value.user?.id ?: return
+        // Mise à jour optimiste de l'UI
+        _state.update { 
+            it.copy(
+                user = it.user?.copy(isPremium = isPremium),
+                error = null
+            ) 
+        }
+        
+        val userId = _state.value.user?.id
+        if (userId.isNullOrBlank()) {
+            // On ne peut pas sauvegarder pour un utilisateur sans ID
+            _state.update { it.copy(error = "Vous devez être connecté pour modifier le statut premium") }
+            return
+        }
         
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
             
-            val result = updatePremiumStatusUseCase(userId, isPremium)
-            
-            when (result) {
-                is AuthResult.Success -> {
-                    _state.update { 
-                        it.copy(
-                            isLoading = false,
-                            user = result.user
-                        )
+            try {
+                val result = updatePremiumStatusUseCase(userId, isPremium)
+                
+                when (result) {
+                    is AuthResult.Success -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                user = result.user
+                            )
+                        }
+                    }
+                    is AuthResult.Error -> {
+                        _state.update { 
+                            it.copy(
+                                isLoading = false, 
+                                error = result.message,
+                                // En cas d'erreur, on revient à l'état précédent
+                                user = it.user?.copy(isPremium = !isPremium)
+                            ) 
+                        }
                     }
                 }
-                is AuthResult.Error -> {
-                    _state.update { it.copy(isLoading = false, error = result.message) }
+            } catch (e: Exception) {
+                _state.update { 
+                    it.copy(
+                        isLoading = false,
+                        error = "Erreur lors de la mise à jour: ${e.message}",
+                        // En cas d'erreur, on revient à l'état précédent
+                        user = it.user?.copy(isPremium = !isPremium)
+                    ) 
                 }
             }
         }
@@ -125,7 +171,8 @@ class UserPreferencesViewModel(
      */
     fun updateDrinksAlcohol(drinksAlcohol: Boolean) {
         val currentPreferences = _state.value.preferences
-        updatePreferences(currentPreferences.copy(drinksAlcohol = drinksAlcohol))
+        val updatedPreferences = currentPreferences.copy(drinksAlcohol = drinksAlcohol)
+        updatePreferences(updatedPreferences)
     }
 
     /**

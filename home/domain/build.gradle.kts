@@ -33,6 +33,9 @@ android {
 }
 
 dependencies {
+    // Modules
+    implementation(project(":authentication:domain"))
+    
     // Core Android
     implementation(libs.core.ktx)
     

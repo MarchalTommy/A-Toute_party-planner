@@ -116,8 +116,19 @@ class PartyDetailViewModel(
      */
     fun updateTodoPriority(todoId: String, isPriority: Boolean) {
         viewModelScope.launch {
-            updateTodoPriorityUseCase(todoId, isPriority)
-            // La mise à jour du UI State est automatique via les flows
+            try {
+                updateTodoPriorityUseCase(todoId, isPriority)
+                // La mise à jour du UI State est automatique via les flows
+                if (isPriority) {
+                    _uiState.update { it.copy(snackbarMessage = "Tâche marquée comme prioritaire") }
+                } else {
+                    _uiState.update { it.copy(snackbarMessage = "Priorité retirée de la tâche") }
+                }
+            } catch (e: UpdateTodoPriorityUseCase.PriorityTodoLimitReachedException) {
+                _uiState.update { it.copy(error = e.message) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Erreur lors de la mise à jour de la priorité: ${e.message}") }
+            }
         }
     }
 
@@ -142,7 +153,7 @@ class PartyDetailViewModel(
     /**
      * Ajoute une nouvelle tâche
      */
-    fun addTodo(title: String, assignedTo: String? = null) {
+    fun addTodo(title: String, assignedTo: String? = null, isPriority: Boolean = false) {
         val currentParty = _uiState.value.party ?: return
         
         val newTodo = Todo(
@@ -152,12 +163,28 @@ class PartyDetailViewModel(
             assignedTo = assignedTo,
             partyId = currentParty.id,
             partyColor = currentParty.color,
-            isPriority = false
+            isPriority = isPriority
         )
         
         viewModelScope.launch {
-            saveTodoUseCase(newTodo)
-            // La mise à jour du UI State est automatique via les flows
+            try {
+                saveTodoUseCase(newTodo)
+                // La mise à jour du UI State est automatique via les flows
+                _uiState.update { it.copy(
+                    snackbarMessage = "Tâche ajoutée avec succès",
+                    showAddTodoDialog = false
+                ) }
+            } catch (e: SaveTodoUseCase.PriorityTodoLimitReachedException) {
+                _uiState.update { it.copy(
+                    error = e.message,
+                    showAddTodoDialog = false
+                ) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(
+                    error = "Erreur lors de l'ajout de la tâche: ${e.message}",
+                    showAddTodoDialog = false
+                ) }
+            }
         }
     }
 
@@ -220,6 +247,13 @@ class PartyDetailViewModel(
             participantsData
         ).joinToString("|")
     }
+
+    /**
+     * Efface le message de la Snackbar
+     */
+    fun clearSnackbarMessage() {
+        _uiState.update { it.copy(snackbarMessage = null) }
+    }
 }
 
 /**
@@ -231,5 +265,7 @@ data class PartyDetailUiState(
     val todos: List<Todo> = emptyList(),
     val toBuys: List<ToBuy> = emptyList(),
     val error: String? = null,
-    val isShareDialogVisible: Boolean = false
+    val isShareDialogVisible: Boolean = false,
+    val snackbarMessage: String? = null,
+    val showAddTodoDialog: Boolean = true
 ) 

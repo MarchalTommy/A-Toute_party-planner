@@ -10,14 +10,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.martodev.atoute.authentication.domain.usecase.GetCurrentUserUseCase
 import com.martodev.atoute.authentication.presentation.AuthEntry
 import com.martodev.atoute.authentication.presentation.AuthEntry.authScreens
-import com.martodev.atoute.authentication.presentation.AuthEntry.userPreferencesScreen
-import com.martodev.atoute.home.presentation.HomeEntry
-import com.martodev.atoute.home.presentation.HomeEntry.homeScreen
 import com.martodev.atoute.party.presentation.PartyEntry
 import com.martodev.atoute.party.presentation.PartyEntry.partyDetailScreen
 import com.martodev.atoute.ui.theme.ATouteTheme
@@ -43,7 +41,7 @@ class MainActivity : ComponentActivity() {
 
                     // Définir la destination de départ en fonction de l'utilisateur
                     val startDestination = if (currentUser != null) {
-                        "home_graph"
+                        "main_screen"
                     } else {
                         "auth_graph"
                     }
@@ -60,33 +58,26 @@ class MainActivity : ComponentActivity() {
                             // Écran d'authentification
                             authScreens(
                                 onAuthSuccess = {
-                                    navController.navigate("home_graph") {
+                                    navController.navigate("main_screen") {
                                         popUpTo("auth_graph") { inclusive = true }
                                     }
                                 },
-                                onNavigateToPreferences = {
-                                    navController.navigate(AuthEntry.Routes.USER_PREFERENCES)
-                                }
-                            )
-
-                            // Écran des préférences utilisateur
-                            userPreferencesScreen(
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
+                                // Nous avons supprimé le bouton des préférences, mais gardons ce paramètre pour la compatibilité
+                                onNavigateToPreferences = { }
                             )
                         }
 
-                        // Intégration du graphe de navigation Home
-                        navigation(
-                            startDestination = HomeEntry.Routes.HOME,
-                            route = "home_graph"
-                        ) {
-                            // Écran d'accueil principal
-                            homeScreen(
-                                onNavigateToParty = { partyId ->
-                                    // Naviguer vers le détail de la Party via le module Party
+                        // Écran principal avec bottom navigation bar
+                        composable(route = "main_screen") {
+                            MainScreen(
+                                onNavigateToPartyDetail = { partyId ->
                                     navController.navigate(PartyEntry.Routes.partyDetail(partyId))
+                                },
+                                onNavigateToAuth = {
+                                    // Pour la déconnexion éventuelle
+                                    navController.navigate("auth_graph") {
+                                        popUpTo("main_screen") { inclusive = true }
+                                    }
                                 }
                             )
                         }

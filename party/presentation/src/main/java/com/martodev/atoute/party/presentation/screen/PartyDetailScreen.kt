@@ -59,6 +59,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -104,10 +106,27 @@ fun PartyDetailScreen(
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     
     // Ajout de logs pour le débogage
     Log.d("PartyDetailScreen", "Écran de détail chargé avec ID: $partyId")
     Log.d("PartyDetailScreen", "État UI actuel: isLoading=${uiState.isLoading}, hasParty=${uiState.party != null}, hasError=${uiState.error != null}")
+    
+    // Gérer les Snackbar messages
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSnackbarMessage()
+        }
+    }
+    
+    // Gérer les messages d'erreur
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            // Ne pas effacer l'erreur automatiquement pour le moment
+        }
+    }
     
     // On charge les détails de la Party au chargement de l'écran
     LaunchedEffect(partyId) {
@@ -154,10 +173,11 @@ fun PartyDetailScreen(
                         navigationIconContentColor = Color.White
                     )
                 )
-            }
-        ) { innerPadding ->
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { paddingValues ->
             PartyDetailContent(
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier.padding(paddingValues),
                 party = party,
                 todos = uiState.todos,
                 toBuys = uiState.toBuys,
@@ -180,7 +200,7 @@ fun PartyDetailScreen(
                 if (shareData != null) {
                     QrCodeShareDialog(
                         eventData = shareData,
-                        onDismiss = viewModel::hideShareDialog
+                        onDismiss = { viewModel.hideShareDialog() }
                     )
                 }
             }

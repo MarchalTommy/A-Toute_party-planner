@@ -2,6 +2,7 @@ package com.martodev.atoute.home.domain.di
 
 import com.martodev.atoute.home.domain.service.AuthService
 import com.martodev.atoute.home.domain.service.InMemoryAuthService
+import com.martodev.atoute.home.domain.usecase.CheckPartyLimitUseCase
 import com.martodev.atoute.home.domain.usecase.GetPartiesUseCase
 import com.martodev.atoute.home.domain.usecase.GetPriorityTodosUseCase
 import com.martodev.atoute.home.domain.usecase.SavePartyUseCase
@@ -20,7 +21,8 @@ val homeDomainModule = module {
     // Use cases
     factory { GetPartiesUseCase(get()) }
     factory { GetPriorityTodosUseCase(get()) }
-    factory { SavePartyUseCase(get()) }
+    factory { SavePartyUseCase(get(), get()) }
     factory { UpdateTodoPriorityUseCase(get()) }
     factory { UpdateTodoStatusUseCase(get()) }
-} 
+    factory { CheckPartyLimitUseCase(get(), get()) }
+}

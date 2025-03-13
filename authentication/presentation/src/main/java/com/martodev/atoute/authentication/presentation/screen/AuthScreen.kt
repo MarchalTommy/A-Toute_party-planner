@@ -1,16 +1,37 @@
 package com.martodev.atoute.authentication.presentation.screen
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.martodev.atoute.authentication.presentation.components.AuthTextField
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.statusBars
 import com.martodev.atoute.authentication.presentation.viewmodel.AuthViewModel
 import org.koin.androidx.compose.koinViewModel
+
+/**
+ * Modes d'authentification disponibles
+ */
+private enum class AuthMode {
+    ANONYMOUS, // Utilisateur anonyme (juste un pseudo)
+    SIGN_UP,   // Création de compte
+    SIGN_IN    // Connexion
+}
 
 /**
  * Écran d'authentification
@@ -33,7 +54,7 @@ fun AuthScreen(
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isCreatingAccount by remember { mutableStateOf(false) }
+    var authMode by remember { mutableStateOf(AuthMode.ANONYMOUS) }
     
     // Effet pour gérer la navigation après authentification
     LaunchedEffect(state.user) {
@@ -49,10 +70,21 @@ fun AuthScreen(
         }
     }
     
+    val title = when (authMode) {
+        AuthMode.ANONYMOUS -> "Accès rapide"
+        AuthMode.SIGN_UP -> "Créer un compte"
+        AuthMode.SIGN_IN -> "Connexion"
+    }
+    
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = if (isCreatingAccount) "Créer un compte" else "Connexion") }
+            CenterAlignedTopAppBar(
+                title = { Text(text = title) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                windowInsets = WindowInsets.statusBars.only(WindowInsetsSides.Top)
             )
         }
     ) { paddingValues ->
@@ -68,119 +100,224 @@ fun AuthScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Titre
+                // Titre principal
                 Text(
                     text = "Bienvenue sur A-Toute",
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
                 )
                 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Formulaire
-                AuthTextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = "Pseudo",
-                    placeholder = "Entrez votre pseudo",
-                    imeAction = if (isCreatingAccount) ImeAction.Next else ImeAction.Done,
-                    onImeAction = {
-                        if (!isCreatingAccount) {
-                            viewModel.createAnonymousUser(username)
-                        }
-                    }
-                )
-                
-                if (isCreatingAccount) {
-                    AuthTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = "Email",
-                        placeholder = "Entrez votre email",
-                        keyboardType = KeyboardType.Email,
-                        imeAction = ImeAction.Next
-                    )
-                    
-                    AuthTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = "Mot de passe",
-                        placeholder = "Entrez votre mot de passe",
-                        isPassword = true,
-                        imeAction = ImeAction.Done,
-                        onImeAction = {
-                            viewModel.createAccount(username, email, password)
-                        }
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Boutons d'action
-                if (isCreatingAccount) {
-                    Button(
-                        onClick = { viewModel.createAccount(username, email, password) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = username.isNotBlank() && email.isNotBlank() && password.isNotBlank() && !state.isLoading
-                    ) {
-                        Text("Créer un compte")
-                    }
-                    
-                    TextButton(
-                        onClick = { isCreatingAccount = false },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Déjà un compte ? Se connecter")
-                    }
-                    
-                    TextButton(
-                        onClick = { 
-                            viewModel.createAnonymousUser(username)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Continuer sans compte")
-                    }
-                } else {
-                    Button(
-                        onClick = { viewModel.createAnonymousUser(username) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = username.isNotBlank() && !state.isLoading
-                    ) {
-                        Text("Continuer sans compte")
-                    }
-                    
-                    Button(
-                        onClick = { isCreatingAccount = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Créer un compte")
-                    }
-                    
-                    TextButton(
-                        onClick = { 
-                            // Afficher le formulaire de connexion
-                            isCreatingAccount = true
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Se connecter")
-                    }
-                }
-                
-                // Bouton pour accéder aux préférences
-                OutlinedButton(
-                    onClick = onNavigateToPreferences,
-                    modifier = Modifier.fillMaxWidth()
+                // Carte principale avec le formulaire
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Définir mes préférences")
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        when (authMode) {
+                            AuthMode.ANONYMOUS -> {
+                                // Formulaire pour utilisateur anonyme (juste le pseudo)
+                                OutlinedTextField(
+                                    value = username,
+                                    onValueChange = { username = it },
+                                    label = { Text("Pseudo") },
+                                    placeholder = { Text("Entrez votre pseudo") },
+                                    leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                Button(
+                                    onClick = { viewModel.createAnonymousUser(username) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = username.isNotBlank() && !state.isLoading,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("Continuer sans compte")
+                                }
+                            }
+                            AuthMode.SIGN_UP -> {
+                                // Formulaire de création de compte
+                                OutlinedTextField(
+                                    value = username,
+                                    onValueChange = { username = it },
+                                    label = { Text("Pseudo") },
+                                    placeholder = { Text("Entrez votre pseudo") },
+                                    leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                OutlinedTextField(
+                                    value = email,
+                                    onValueChange = { email = it },
+                                    label = { Text("Email") },
+                                    placeholder = { Text("Entrez votre email") },
+                                    leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Email,
+                                        imeAction = ImeAction.Next
+                                    ),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                OutlinedTextField(
+                                    value = password,
+                                    onValueChange = { password = it },
+                                    label = { Text("Mot de passe") },
+                                    placeholder = { Text("Entrez votre mot de passe") },
+                                    leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Password,
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = { viewModel.createAccount(username, email, password) }
+                                    ),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                Button(
+                                    onClick = { viewModel.createAccount(username, email, password) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = username.isNotBlank() && email.isNotBlank() && password.isNotBlank() && !state.isLoading,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("Créer un compte")
+                                }
+                            }
+                            AuthMode.SIGN_IN -> {
+                                // Formulaire de connexion (sans le pseudo)
+                                OutlinedTextField(
+                                    value = email,
+                                    onValueChange = { email = it },
+                                    label = { Text("Email") },
+                                    placeholder = { Text("Entrez votre email") },
+                                    leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Email,
+                                        imeAction = ImeAction.Next
+                                    ),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                OutlinedTextField(
+                                    value = password,
+                                    onValueChange = { password = it },
+                                    label = { Text("Mot de passe") },
+                                    placeholder = { Text("Entrez votre mot de passe") },
+                                    leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Password,
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = { viewModel.signIn(email, password) }
+                                    ),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                
+                                Button(
+                                    onClick = { viewModel.signIn(email, password) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = email.isNotBlank() && password.isNotBlank() && !state.isLoading,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("Se connecter")
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Boutons de navigation entre les modes
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        when (authMode) {
+                            AuthMode.ANONYMOUS -> {
+                                Button(
+                                    onClick = { authMode = AuthMode.SIGN_UP },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondary
+                                    )
+                                ) {
+                                    Text("Créer un compte")
+                                }
+                                
+                                TextButton(
+                                    onClick = { authMode = AuthMode.SIGN_IN },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Se connecter")
+                                }
+                            }
+                            AuthMode.SIGN_UP -> {
+                                TextButton(
+                                    onClick = { authMode = AuthMode.SIGN_IN },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Déjà un compte ? Se connecter")
+                                }
+                                
+                                TextButton(
+                                    onClick = { authMode = AuthMode.ANONYMOUS },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Continuer sans compte")
+                                }
+                            }
+                            AuthMode.SIGN_IN -> {
+                                TextButton(
+                                    onClick = { authMode = AuthMode.SIGN_UP },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Pas de compte ? Créer un compte")
+                                }
+                                
+                                TextButton(
+                                    onClick = { authMode = AuthMode.ANONYMOUS },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Continuer sans compte")
+                                }
+                            }
+                        }
+                    }
                 }
             }
             
             // Indicateur de chargement
             if (state.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
         }
     }

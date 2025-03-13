@@ -7,6 +7,7 @@ import com.martodev.atoute.home.domain.usecase.GetPartiesUseCase
 import com.martodev.atoute.home.domain.usecase.GetPriorityTodosUseCase
 import com.martodev.atoute.home.domain.usecase.SavePartyUseCase
 import com.martodev.atoute.home.domain.usecase.UpdateTodoStatusUseCase
+import com.martodev.atoute.home.domain.usecase.CheckPartyLimitUseCase
 import com.martodev.atoute.home.presentation.mapper.toPresentation
 import com.martodev.atoute.home.presentation.model.Party
 import com.martodev.atoute.home.presentation.model.Todo
@@ -29,7 +30,8 @@ class HomeViewModel(
     private val getPriorityTodosUseCase: GetPriorityTodosUseCase,
     private val savePartyUseCase: SavePartyUseCase,
     private val updateTodoStatusUseCase: UpdateTodoStatusUseCase,
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val checkPartyLimitUseCase: CheckPartyLimitUseCase
 ) : ViewModel() {
 
     // État UI actuel
@@ -120,14 +122,22 @@ class HomeViewModel(
                 color = color
             )
 
-            // Sauvegarder dans le repository
-            val partyId = savePartyUseCase(newParty)
+            try {
+                // Sauvegarder dans le repository
+                val partyId = savePartyUseCase(newParty)
 
-            // Enregistrer l'utilisateur courant comme propriétaire
-            authService.registerCurrentUserAsOwner(partyId)
+                // Enregistrer l'utilisateur courant comme propriétaire
+                authService.registerCurrentUserAsOwner(partyId)
 
-            // Mettre à jour la liste des événements
-            loadParties()
+                // Mettre à jour la liste des événements
+                loadParties()
+            } catch (e: SavePartyUseCase.PartyLimitReachedException) {
+                // Afficher l'erreur de limite d'événements atteinte
+                _uiState.update { it.copy(error = e.message) }
+            } catch (e: Exception) {
+                // Gérer les autres erreurs
+                _uiState.update { it.copy(error = "Erreur lors de la création de l'événement: ${e.message}") }
+            }
         }
     }
 
@@ -213,19 +223,22 @@ class HomeViewModel(
                     // Enregistrer l'utilisateur courant comme propriétaire
                     authService.registerCurrentUserAsOwner(partyId)
 
-                    // Afficher une notification de succès
-                    _uiState.update {
-                        it.copy(
-                            isQrScanDialogVisible = false,
-                            error = null,
-                            successMessage = "Événement \"$title\" ajouté avec succès !"
-                        )
-                    }
-
-                    // Recharger les événements pour afficher le nouvel événement
+                    // Mettre à jour la liste des événements
                     loadParties()
+
+                    // Fermer le dialogue
+                    _uiState.update { it.copy(isQrScanDialogVisible = false) }
+                } catch (e: SavePartyUseCase.PartyLimitReachedException) {
+                    // Afficher l'erreur de limite d'événements atteinte
+                    _uiState.update { 
+                        it.copy(
+                            error = e.message,
+                            isQrScanDialogVisible = false
+                        ) 
+                    }
                 } catch (e: Exception) {
-                    _uiState.update {
+                    // Gérer les autres erreurs
+                    _uiState.update { 
                         it.copy(
                             error = "Erreur lors de la création de l'événement: ${e.message}",
                             isQrScanDialogVisible = false
@@ -244,7 +257,7 @@ class HomeViewModel(
     }
 
     /**
-     * Efface le message de succès après son affichage
+     * Efface le message de succès
      */
     fun clearSuccessMessage() {
         _uiState.update { it.copy(successMessage = null) }

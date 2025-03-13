@@ -33,17 +33,11 @@ class AuthRepositoryImpl(
         return userPreferencesDataStore.getCurrentUserId().combine(
             userPreferencesDataStore.getCurrentUserName()
         ) { userId, userName ->
-            if (userId != null) {
-                // Utilisateur enregistré, récupérer depuis la base de données
+            // Si on a un ID utilisateur, récupérer l'utilisateur depuis la base de données
+            if (userId != null && userId.isNotBlank()) {
                 userDao.getUserById(userId).first()?.toDomainModel()
-            } else if (userName != null) {
-                // Utilisateur anonyme, créer un objet User avec seulement le nom
-                User(
-                    id = "",
-                    username = userName
-                )
             } else {
-                // Aucun utilisateur
+                // Si on n'a pas d'ID valide, aucun utilisateur n'est connecté
                 null
             }
         }
@@ -57,16 +51,30 @@ class AuthRepositoryImpl(
      */
     override suspend fun createAnonymousUser(username: String): AuthResult {
         return try {
-            // Enregistrer le nom d'utilisateur dans les préférences
-            userPreferencesDataStore.saveCurrentUserName(username)
+            // Générer un ID unique pour l'utilisateur anonyme
+            val userId = UUID.randomUUID().toString()
             
-            // Créer un utilisateur temporaire pour le retour
-            val user = User(
-                id = "",
-                username = username
+            // Créer un utilisateur avec cet ID
+            val user = UserEntity(
+                id = userId,
+                username = username,
+                email = null,
+                isPremium = false,
+                drinksAlcohol = true,
+                isHalal = false,
+                isVegetarian = false,
+                isVegan = false,
+                allergies = ""
             )
             
-            AuthResult.Success(user)
+            // Insérer l'utilisateur dans la base de données
+            userDao.insertUser(user)
+            
+            // Enregistrer l'ID et le nom d'utilisateur dans les préférences
+            userPreferencesDataStore.saveCurrentUserId(userId)
+            userPreferencesDataStore.saveCurrentUserName(username)
+            
+            AuthResult.Success(user.toDomainModel())
         } catch (e: Exception) {
             AuthResult.Error("Erreur lors de la création de l'utilisateur anonyme: ${e.message}")
         }
