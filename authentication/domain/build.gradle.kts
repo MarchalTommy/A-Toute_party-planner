@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.martodev.atoute.auth.domain"
+    namespace = "com.martodev.atoute.authentication.domain"
     compileSdk = 35
 
     defaultConfig {
@@ -24,20 +24,24 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 }
 
 dependencies {
-
+    // Kotlin
     implementation(libs.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
+    implementation(libs.kotlinx.coroutines)
+    
+    // Koin
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    
+    // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation(libs.espresso.core)
 }

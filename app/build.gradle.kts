@@ -69,6 +69,9 @@ dependencies {
     implementation(project(":party:presentation"))
     implementation(project(":party:domain"))
     implementation(project(":party:data"))
+    implementation(project(":authentication:presentation"))
+    implementation(project(":authentication:domain"))
+    implementation(project(":authentication:data"))
 
     // Core
     implementation(libs.core.ktx)

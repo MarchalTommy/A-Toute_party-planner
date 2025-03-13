@@ -1,6 +1,7 @@
 package com.martodev.atoute.home.presentation
 
-import androidx.compose.runtime.Composable
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.compose.composable
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -16,16 +17,18 @@ object HomeEntry {
     }
 
     /**
-     * Écran d'accueil principal, exposé pour être utilisé par l'application
+     * Ajoute l'écran d'accueil au graphe de navigation
+     *
+     * @param onNavigateToParty Callback appelé lorsqu'un utilisateur clique sur une party
      */
-    @Composable
-    fun HomeScreen(
-        onNavigateToParty: (String) -> Unit = {}
+    fun NavGraphBuilder.homeScreen(
+        onNavigateToParty: (String) -> Unit
     ) {
-        // Utilisation directe du composant HomeScreen
-        HomeScreen(
-            viewModel = koinViewModel(),
-            onPartyClick = onNavigateToParty
-        )
+        composable(Routes.HOME) {
+            HomeScreen(
+                viewModel = koinViewModel(),
+                onPartyClick = onNavigateToParty
+            )
+        }
     }
 } 
