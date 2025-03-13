@@ -70,9 +70,7 @@ import org.koin.androidx.compose.koinViewModel
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = koinViewModel(),
-    onPartyClick: (String) -> Unit,
-    onTodoClick: (String) -> Unit,
-    onAddPartyClick: () -> Unit = {}
+    onPartyClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -83,7 +81,6 @@ fun HomeScreen(
         HomeContent(
             uiState = uiState,
             onPartyClick = onPartyClick,
-            onTodoClick = onTodoClick,
             onTodoStatusChange = { todoId, isCompleted ->
                 viewModel.updateTodoStatus(todoId, isCompleted)
             },
@@ -153,7 +150,6 @@ fun HomeScreen(
 private fun HomeContent(
     uiState: HomeUiState,
     onPartyClick: (String) -> Unit,
-    onTodoClick: (String) -> Unit,
     onTodoStatusChange: (String, Boolean) -> Unit,
     calculateDaysUntil: (LocalDateTime) -> Long
 ) {
