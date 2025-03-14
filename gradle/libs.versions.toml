@@ -9,6 +9,8 @@ espresso-core = "3.6.1"
 mockito-core = "5.16.0"
 kotlinx-coroutines-test = "1.6.4"
 mockito-kotlin = "4.1.0"
+mockk = "1.13.10"
+arch-core-testing = "2.2.0"
 kotlinx-coroutines-core = "1.7.3"
 lifecycle-runtime-ktx = "2.8.7"
 activity-compose = "1.10.1"
@@ -58,6 +60,8 @@ espresso-core = { group = "androidx.test.espresso", name = "espresso-core", vers
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito-core" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito-kotlin" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "arch-core-testing" }
 
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle-runtime-ktx" }
 lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle-scope" }

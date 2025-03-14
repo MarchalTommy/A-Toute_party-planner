@@ -6,6 +6,8 @@ import com.martodev.atoute.home.domain.usecase.CheckPartyLimitUseCase
 import com.martodev.atoute.home.domain.usecase.GetPartiesUseCase
 import com.martodev.atoute.home.domain.usecase.GetPriorityTodosUseCase
 import com.martodev.atoute.home.domain.usecase.SavePartyUseCase
+import com.martodev.atoute.home.domain.usecase.SaveToBuyUseCase
+import com.martodev.atoute.home.domain.usecase.SaveTodoUseCase
 import com.martodev.atoute.home.domain.usecase.UpdateTodoPriorityUseCase
 import com.martodev.atoute.home.domain.usecase.UpdateTodoStatusUseCase
 import org.koin.dsl.module
@@ -25,4 +27,6 @@ val homeDomainModule = module {
     factory { UpdateTodoPriorityUseCase(get()) }
     factory { UpdateTodoStatusUseCase(get()) }
     factory { CheckPartyLimitUseCase(get(), get()) }
+    factory { SaveTodoUseCase(get()) }
+    factory { SaveToBuyUseCase(get()) }
 }

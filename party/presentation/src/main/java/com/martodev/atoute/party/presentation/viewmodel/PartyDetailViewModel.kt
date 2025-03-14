@@ -232,10 +232,25 @@ class PartyDetailViewModel(
      */
     fun generateEventShareData(): String? {
         val party = _uiState.value.party ?: return null
+        val todos = _uiState.value.todos
+        val toBuys = _uiState.value.toBuys
         
         // Format complet incluant toutes les informations nécessaires pour dupliquer l'événement
-        // Format: ID|TITLE|DATE_ISO|LOCATION|COLOR|DESCRIPTION|PARTICIPANTS
+        // Format: ID|TITLE|DATE_ISO|LOCATION|COLOR|DESCRIPTION|PARTICIPANTS|TODOS|TOBUYS
+        
         val participantsData = party.participants.joinToString(",")
+        
+        // Sérialisation des Todos
+        // Format pour chaque todo: id::title::isCompleted::assignedTo::isPriority
+        val todosData = todos.joinToString(",") { todo ->
+            "${todo.id}::${todo.title}::${todo.isCompleted}::${todo.assignedTo ?: ""}::${todo.isPriority}"
+        }
+        
+        // Sérialisation des ToBuys
+        // Format pour chaque tobuy: id::title::quantity::estimatedPrice::isPurchased::assignedTo::isPriority
+        val toBuysData = toBuys.joinToString(",") { toBuy ->
+            "${toBuy.id}::${toBuy.title}::${toBuy.quantity}::${toBuy.estimatedPrice ?: ""}::${toBuy.isPurchased}::${toBuy.assignedTo ?: ""}::${toBuy.isPriority}"
+        }
         
         return listOf(
             party.id,
@@ -244,7 +259,9 @@ class PartyDetailViewModel(
             party.location,
             party.color?.toString() ?: "0xFF2196F3", // Bleu par défaut
             party.description,
-            participantsData
+            participantsData,
+            todosData,
+            toBuysData
         ).joinToString("|")
     }
 
