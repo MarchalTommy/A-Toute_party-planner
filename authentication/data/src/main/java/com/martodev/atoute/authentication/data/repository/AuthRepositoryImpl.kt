@@ -1,7 +1,7 @@
 package com.martodev.atoute.authentication.data.repository
 
+import com.martodev.atoute.authentication.data.datasource.IUserPreferencesDataStore
 import com.martodev.atoute.authentication.data.datasource.UserDao
-import com.martodev.atoute.authentication.data.datasource.UserPreferencesDataStore
 import com.martodev.atoute.authentication.data.model.UserEntity
 import com.martodev.atoute.authentication.domain.model.AuthResult
 import com.martodev.atoute.authentication.domain.model.User
@@ -10,7 +10,6 @@ import com.martodev.atoute.authentication.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import java.util.UUID
 
 /**
@@ -21,7 +20,7 @@ import java.util.UUID
  */
 class AuthRepositoryImpl(
     private val userDao: UserDao,
-    private val userPreferencesDataStore: UserPreferencesDataStore
+    private val userPreferencesDataStore: IUserPreferencesDataStore
 ) : AuthRepository {
 
     /**

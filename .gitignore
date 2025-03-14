@@ -75,3 +75,4 @@ lint/tmp/
 # App Specific cases 
 app/release/output.json
 .idea/codeStyles/
+/home/data/schemas/com.martodev.atoute.home.data.db.ATouteDatabase/2.json

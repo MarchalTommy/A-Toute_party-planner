@@ -1,27 +1,19 @@
 package com.martodev.atoute.authentication.data.datasource
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * Clé pour le DataStore des préférences utilisateur
+ * Version de UserPreferencesDataStore pour les tests
+ * Implémente l'interface et utilise un DataStore personnalisé pour les tests
  */
-private val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "user_preferences"
-)
-
-/**
- * Gère les préférences utilisateur avec DataStore
- *
- * @property context Contexte Android
- */
-class UserPreferencesDataStore(private val context: Context) : IUserPreferencesDataStore {
+class TestUserPreferencesDataStore(
+    private val testDataStore: DataStore<Preferences>
+) : IUserPreferencesDataStore {
     
     companion object {
         // Clés pour les préférences
@@ -35,7 +27,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * @return Flow contenant l'ID de l'utilisateur ou null
      */
     override fun getCurrentUserId(): Flow<String?> {
-        return context.userPreferencesDataStore.data.map { preferences ->
+        return testDataStore.data.map { preferences ->
             preferences[CURRENT_USER_ID]
         }
     }
@@ -46,7 +38,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * @param userId ID de l'utilisateur
      */
     override suspend fun saveCurrentUserId(userId: String) {
-        context.userPreferencesDataStore.edit { preferences ->
+        testDataStore.edit { preferences ->
             preferences[CURRENT_USER_ID] = userId
         }
     }
@@ -57,7 +49,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * @return Flow contenant le nom de l'utilisateur ou null
      */
     override fun getCurrentUserName(): Flow<String?> {
-        return context.userPreferencesDataStore.data.map { preferences ->
+        return testDataStore.data.map { preferences ->
             preferences[USER_NAME]
         }
     }
@@ -68,7 +60,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * @param userName Nom de l'utilisateur
      */
     override suspend fun saveCurrentUserName(userName: String) {
-        context.userPreferencesDataStore.edit { preferences ->
+        testDataStore.edit { preferences ->
             preferences[USER_NAME] = userName
         }
     }
@@ -77,7 +69,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * Efface les données de l'utilisateur actuel
      */
     override suspend fun clearCurrentUser() {
-        context.userPreferencesDataStore.edit { preferences ->
+        testDataStore.edit { preferences ->
             preferences.remove(CURRENT_USER_ID)
             preferences.remove(USER_NAME)
         }

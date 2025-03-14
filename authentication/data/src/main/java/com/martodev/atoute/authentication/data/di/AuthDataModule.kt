@@ -1,6 +1,7 @@
 package com.martodev.atoute.authentication.data.di
 
 import com.martodev.atoute.authentication.data.datasource.AppDatabase
+import com.martodev.atoute.authentication.data.datasource.IUserPreferencesDataStore
 import com.martodev.atoute.authentication.data.datasource.UserPreferencesDataStore
 import com.martodev.atoute.authentication.data.repository.AuthRepositoryImpl
 import com.martodev.atoute.authentication.domain.repository.AuthRepository
@@ -16,7 +17,7 @@ val authDataModule = module {
     single { get<AppDatabase>().userDao() }
     
     // DataStore
-    single { UserPreferencesDataStore(androidContext()) }
+    single<IUserPreferencesDataStore> { UserPreferencesDataStore(androidContext()) }
     
     // Repository
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
