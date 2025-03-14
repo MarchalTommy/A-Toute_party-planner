@@ -29,9 +29,7 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -44,8 +42,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,16 +56,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.martodev.atoute.home.presentation.model.Party
 import com.martodev.atoute.home.presentation.model.Todo
+import kotlinx.coroutines.delay
+import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import kotlinx.coroutines.delay
-import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,15 +93,33 @@ fun HomeScreen(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showCreateEventDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = "Ajouter un événement",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
+                // Bouton pour scanner le QR code
+                FloatingActionButton(
+                    onClick = { viewModel.showQrScanDialog() },
+                    containerColor = MaterialTheme.colorScheme.secondary
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.qr_code_scanner),
+                        contentDescription = "Scanner un QR code",
+                        tint = MaterialTheme.colorScheme.onSecondary
+                    )
+                }
+                
+                // Bouton pour ajouter un événement
+                FloatingActionButton(
+                    onClick = { showCreateEventDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = "Ajouter un événement",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
