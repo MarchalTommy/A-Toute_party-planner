@@ -4,13 +4,14 @@ import android.app.Application
 import com.martodev.atoute.authentication.data.di.authDataModule
 import com.martodev.atoute.authentication.domain.di.authDomainModule
 import com.martodev.atoute.authentication.presentation.di.authPresentationModule
+import com.martodev.atoute.core.data.di.networkModule
 import com.martodev.atoute.home.data.db.DatabaseInitializer
 import com.martodev.atoute.home.data.di.homeDataModule
 import com.martodev.atoute.home.domain.di.homeDomainModule
 import com.martodev.atoute.home.presentation.di.homePresentationModule
 import com.martodev.atoute.party.data.di.partyDataModule
-import com.martodev.atoute.party.presentation.di.partyPresentationModule
 import com.martodev.atoute.party.domain.di.partyDomainModule
+import com.martodev.atoute.party.presentation.di.partyPresentationModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +44,9 @@ class ATouteApplication : Application() {
             // Liste des modules
             modules(
                 listOf(
+                    // Module réseau pour Firestore
+                    networkModule,
+                    
                     // Modules du feature Home
                     homeDataModule,
                     homeDomainModule,

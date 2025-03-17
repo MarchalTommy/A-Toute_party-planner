@@ -1,11 +1,10 @@
 plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinAndroid)
-    alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "com.martodev.atoute.core.data"
+    namespace = "com.martodev.atoute.core.network"
     compileSdk = 35
 
     defaultConfig {
@@ -13,13 +12,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
-        
-        // Exporter les schémas de base de données
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-            arg("room.incremental", "true")
-            arg("room.expandProjection", "true")
-        }
     }
 
     buildTypes {
@@ -41,22 +33,17 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:data"))
     implementation(project(":core:utils"))
 
     // Core Android
     implementation(libs.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    
-    // Room
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
     
     // Firebase
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
     
     // Koin - Injection de dépendances
     implementation(platform(libs.koin.bom))
@@ -77,4 +64,4 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.mockito.core)
     androidTestImplementation(libs.kotlinx.coroutines.test)
-}
+} 

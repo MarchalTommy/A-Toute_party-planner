@@ -73,6 +73,8 @@ dependencies {
     implementation(project(":authentication:presentation"))
     implementation(project(":authentication:domain"))
     implementation(project(":authentication:data"))
+    implementation(project(":core:data"))
+    implementation(project(":core:domain"))
 
     // Core
     implementation(libs.core.ktx)
@@ -95,8 +97,13 @@ dependencies {
     implementation(libs.koin.androidx.compose)
     
     // ZXing pour le scanning de QR code
-    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
-    implementation("com.google.zxing:core:3.5.2")
+    implementation(libs.zxing.android.embedded)
+    implementation(libs.zxing.core)
+    
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
     
     // Tests
     testImplementation(libs.junit)
