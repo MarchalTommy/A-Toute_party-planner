@@ -6,6 +6,7 @@ import com.martodev.atoute.authentication.domain.model.AuthResult
 import com.martodev.atoute.authentication.domain.model.User
 import com.martodev.atoute.authentication.domain.model.UserPreferences
 import com.martodev.atoute.authentication.domain.usecase.GetCurrentUserUseCase
+import com.martodev.atoute.authentication.domain.usecase.SignOutUseCase
 import com.martodev.atoute.authentication.domain.usecase.UpdatePremiumStatusUseCase
 import com.martodev.atoute.authentication.domain.usecase.UpdateUserPreferencesUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,11 +36,13 @@ data class UserPreferencesState(
  * @property getCurrentUserUseCase Use case pour récupérer l'utilisateur actuel
  * @property updateUserPreferencesUseCase Use case pour mettre à jour les préférences de l'utilisateur
  * @property updatePremiumStatusUseCase Use case pour mettre à jour le statut premium de l'utilisateur
+ * @property signOutUseCase Use case pour déconnecter l'utilisateur
  */
 class UserPreferencesViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val updateUserPreferencesUseCase: UpdateUserPreferencesUseCase,
-    private val updatePremiumStatusUseCase: UpdatePremiumStatusUseCase
+    private val updatePremiumStatusUseCase: UpdatePremiumStatusUseCase,
+    private val signOutUseCase: SignOutUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(UserPreferencesState())
@@ -240,5 +243,31 @@ class UserPreferencesViewModel(
      */
     fun clearError() {
         _state.update { it.copy(error = null) }
+    }
+
+    /**
+     * Déconnecte l'utilisateur actuel
+     */
+    fun signOut() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            try {
+                signOutUseCase()
+                _state.update { 
+                    it.copy(
+                        isLoading = false,
+                        user = null,
+                        preferences = UserPreferences()
+                    ) 
+                }
+            } catch (e: Exception) {
+                _state.update { 
+                    it.copy(
+                        isLoading = false,
+                        error = "Erreur lors de la déconnexion: ${e.message}"
+                    ) 
+                }
+            }
+        }
     }
 } 

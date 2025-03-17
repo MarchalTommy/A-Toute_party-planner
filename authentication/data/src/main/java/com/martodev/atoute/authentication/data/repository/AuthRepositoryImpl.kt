@@ -1,5 +1,6 @@
 package com.martodev.atoute.authentication.data.repository
 
+import com.martodev.atoute.authentication.data.datasource.FirebaseAuthDataSource
 import com.martodev.atoute.authentication.data.datasource.IUserPreferencesDataStore
 import com.martodev.atoute.authentication.data.datasource.UserDao
 import com.martodev.atoute.authentication.data.model.UserEntity
@@ -8,17 +9,18 @@ import com.martodev.atoute.authentication.domain.model.User
 import com.martodev.atoute.authentication.domain.model.UserPreferences
 import com.martodev.atoute.authentication.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import java.util.UUID
+import kotlinx.coroutines.flow.map
 
 /**
  * Implémentation du repository d'authentification
  *
- * @property userDao DAO pour accéder aux utilisateurs
+ * @property firebaseAuthDataSource Source de données Firebase Auth
+ * @property userDao DAO pour accéder aux préférences utilisateur
  * @property userPreferencesDataStore DataStore pour les préférences utilisateur
  */
 class AuthRepositoryImpl(
+    private val firebaseAuthDataSource: FirebaseAuthDataSource,
     private val userDao: UserDao,
     private val userPreferencesDataStore: IUserPreferencesDataStore
 ) : AuthRepository {
@@ -29,14 +31,28 @@ class AuthRepositoryImpl(
      * @return Flow contenant l'utilisateur actuel ou null
      */
     override fun getCurrentUser(): Flow<User?> {
-        return userPreferencesDataStore.getCurrentUserId().combine(
-            userPreferencesDataStore.getCurrentUserName()
-        ) { userId, userName ->
-            // Si on a un ID utilisateur, récupérer l'utilisateur depuis la base de données
-            if (userId != null && userId.isNotBlank()) {
-                userDao.getUserById(userId).first()?.toDomainModel()
+        return firebaseAuthDataSource.getCurrentUser().map { firebaseUser ->
+            if (firebaseUser != null) {
+                // Récupérer les préférences de l'utilisateur depuis la base de données locale
+                val userEntity = userDao.getUserById(firebaseUser.id).first()
+                if (userEntity != null) {
+                    // Combiner l'utilisateur Firebase avec les préférences locales
+                    firebaseUser.copy(
+                        preferences = UserPreferences(
+                            drinksAlcohol = userEntity.drinksAlcohol,
+                            isHalal = userEntity.isHalal,
+                            isVegetarian = userEntity.isVegetarian,
+                            isVegan = userEntity.isVegan,
+                            hasAllergies = userEntity.allergies.split(",").filter { it.isNotBlank() }
+                        ),
+                        isPremium = userEntity.isPremium
+                    )
+                } else {
+                    // Aucun utilisateur en local, créer une entrée par défaut
+                    saveUserPreferences(firebaseUser.id)
+                    firebaseUser
+                }
             } else {
-                // Si on n'a pas d'ID valide, aucun utilisateur n'est connecté
                 null
             }
         }
@@ -49,34 +65,27 @@ class AuthRepositoryImpl(
      * @return Résultat de l'opération
      */
     override suspend fun createAnonymousUser(username: String): AuthResult {
-        return try {
-            // Générer un ID unique pour l'utilisateur anonyme
-            val userId = UUID.randomUUID().toString()
+        val result = firebaseAuthDataSource.createAnonymousUser(username)
+        
+        // Si l'authentification a réussi, sauvegarder les préférences par défaut
+        if (result is AuthResult.Success) {
+            saveUserPreferences(result.user.id)
             
-            // Créer un utilisateur avec cet ID
-            val user = UserEntity(
-                id = userId,
-                username = username,
-                email = null,
-                isPremium = false,
+            // Retourner l'utilisateur avec ses préférences par défaut
+            val defaultPrefs = UserPreferences(
                 drinksAlcohol = true,
                 isHalal = false,
                 isVegetarian = false,
                 isVegan = false,
-                allergies = ""
+                hasAllergies = emptyList()
             )
             
-            // Insérer l'utilisateur dans la base de données
-            userDao.insertUser(user)
-            
-            // Enregistrer l'ID et le nom d'utilisateur dans les préférences
-            userPreferencesDataStore.saveCurrentUserId(userId)
-            userPreferencesDataStore.saveCurrentUserName(username)
-            
-            AuthResult.Success(user.toDomainModel())
-        } catch (e: Exception) {
-            AuthResult.Error("Erreur lors de la création de l'utilisateur anonyme: ${e.message}")
+            return AuthResult.Success(
+                result.user.copy(preferences = defaultPrefs)
+            )
         }
+        
+        return result
     }
 
     /**
@@ -92,38 +101,28 @@ class AuthRepositoryImpl(
         email: String,
         password: String
     ): AuthResult {
-        return try {
-            // Vérifier si l'email existe déjà
-            val existingUser = userDao.getUserByEmail(email)
-            if (existingUser != null) {
-                return AuthResult.Error("Un compte avec cet email existe déjà")
-            }
+        val result = firebaseAuthDataSource.createAccount(username, email, password)
+        
+        // Si l'authentification a réussi, sauvegarder les préférences par défaut
+        if (result is AuthResult.Success) {
+            saveUserPreferences(result.user.id)
             
-            // Créer un nouvel utilisateur
-            val userId = UUID.randomUUID().toString()
-            val user = UserEntity(
-                id = userId,
-                username = username,
-                email = email,
-                isPremium = false,
+            // Retourner l'utilisateur avec ses préférences par défaut
+            // Ces préférences ont été sauvegardées en base locale par saveUserPreferences
+            val defaultPrefs = UserPreferences(
                 drinksAlcohol = true,
                 isHalal = false,
                 isVegetarian = false,
                 isVegan = false,
-                allergies = ""
+                hasAllergies = emptyList()
             )
             
-            // Insérer l'utilisateur dans la base de données
-            userDao.insertUser(user)
-            
-            // Enregistrer l'ID de l'utilisateur dans les préférences
-            userPreferencesDataStore.saveCurrentUserId(userId)
-            userPreferencesDataStore.saveCurrentUserName(username)
-            
-            AuthResult.Success(user.toDomainModel())
-        } catch (e: Exception) {
-            AuthResult.Error("Erreur lors de la création du compte: ${e.message}")
+            return AuthResult.Success(
+                result.user.copy(preferences = defaultPrefs)
+            )
         }
+        
+        return result
     }
 
     /**
@@ -134,29 +133,40 @@ class AuthRepositoryImpl(
      * @return Résultat de l'opération
      */
     override suspend fun signIn(email: String, password: String): AuthResult {
-        return try {
-            // Récupérer l'utilisateur par email
-            val user = userDao.getUserByEmail(email)
-                ?: return AuthResult.Error("Email ou mot de passe incorrect")
-            
-            // Dans une vraie application, on vérifierait le mot de passe ici
-            // Pour simplifier, on considère que le mot de passe est correct
-            
-            // Enregistrer l'ID de l'utilisateur dans les préférences
-            userPreferencesDataStore.saveCurrentUserId(user.id)
-            userPreferencesDataStore.saveCurrentUserName(user.username)
-            
-            AuthResult.Success(user.toDomainModel())
-        } catch (e: Exception) {
-            AuthResult.Error("Erreur lors de la connexion: ${e.message}")
+        val result = firebaseAuthDataSource.signIn(email, password)
+        
+        // Si l'authentification a réussi, vérifier si l'utilisateur existe en local
+        if (result is AuthResult.Success) {
+            // Vérifier si l'utilisateur existe déjà dans la base de données locale
+            val userEntity = userDao.getUserById(result.user.id).first()
+            if (userEntity == null) {
+                // L'utilisateur n'existe pas en local, créer une entrée par défaut
+                saveUserPreferences(result.user.id)
+            } else {
+                // Mettre à jour l'utilisateur avec les préférences existantes
+                return AuthResult.Success(
+                    result.user.copy(
+                        preferences = UserPreferences(
+                            drinksAlcohol = userEntity.drinksAlcohol,
+                            isHalal = userEntity.isHalal,
+                            isVegetarian = userEntity.isVegetarian,
+                            isVegan = userEntity.isVegan,
+                            hasAllergies = userEntity.allergies.split(",").filter { it.isNotBlank() }
+                        ),
+                        isPremium = userEntity.isPremium
+                    )
+                )
+            }
         }
+        
+        return result
     }
 
     /**
      * Déconnecte l'utilisateur actuel
      */
     override suspend fun signOut() {
-        userPreferencesDataStore.clearCurrentUser()
+        firebaseAuthDataSource.signOut()
     }
 
     /**
@@ -173,21 +183,43 @@ class AuthRepositoryImpl(
         return try {
             // Récupérer l'utilisateur
             val userEntity = userDao.getUserById(userId).first()
-                ?: return AuthResult.Error("Utilisateur non trouvé")
             
-            // Mettre à jour les préférences
-            val updatedUser = userEntity.copy(
-                drinksAlcohol = preferences.drinksAlcohol,
-                isHalal = preferences.isHalal,
-                isVegetarian = preferences.isVegetarian,
-                isVegan = preferences.isVegan,
-                allergies = preferences.hasAllergies.joinToString(",")
-            )
+            // Créer ou mettre à jour l'entité utilisateur
+            val updatedUser = if (userEntity != null) {
+                userEntity.copy(
+                    drinksAlcohol = preferences.drinksAlcohol,
+                    isHalal = preferences.isHalal,
+                    isVegetarian = preferences.isVegetarian,
+                    isVegan = preferences.isVegan,
+                    allergies = preferences.hasAllergies.joinToString(",")
+                )
+            } else {
+                UserEntity(
+                    id = userId,
+                    username = "", // Le nom sera récupéré depuis Firebase
+                    email = null, // L'email sera récupéré depuis Firebase
+                    isPremium = false,
+                    drinksAlcohol = preferences.drinksAlcohol,
+                    isHalal = preferences.isHalal,
+                    isVegetarian = preferences.isVegetarian,
+                    isVegan = preferences.isVegan,
+                    allergies = preferences.hasAllergies.joinToString(",")
+                )
+            }
             
-            // Mettre à jour l'utilisateur dans la base de données
-            userDao.updateUser(updatedUser)
+            // Mettre à jour ou insérer l'utilisateur dans la base de données
+            if (userEntity != null) {
+                userDao.updateUser(updatedUser)
+            } else {
+                userDao.insertUser(updatedUser)
+            }
             
-            AuthResult.Success(updatedUser.toDomainModel())
+            // Récupérer l'utilisateur Firebase actuel
+            val currentUser = firebaseAuthDataSource.getCurrentUser().first()
+                ?: return AuthResult.Error("Aucun utilisateur connecté")
+            
+            // Retourner le résultat avec l'utilisateur mis à jour
+            AuthResult.Success(currentUser.copy(preferences = preferences))
         } catch (e: Exception) {
             AuthResult.Error("Erreur lors de la mise à jour des préférences: ${e.message}")
         }
@@ -204,17 +236,58 @@ class AuthRepositoryImpl(
         return try {
             // Récupérer l'utilisateur
             val userEntity = userDao.getUserById(userId).first()
-                ?: return AuthResult.Error("Utilisateur non trouvé")
             
-            // Mettre à jour le statut premium
-            val updatedUser = userEntity.copy(isPremium = isPremium)
+            // Créer ou mettre à jour l'entité utilisateur
+            val updatedUser = if (userEntity != null) {
+                userEntity.copy(isPremium = isPremium)
+            } else {
+                UserEntity(
+                    id = userId,
+                    username = "", // Le nom sera récupéré depuis Firebase
+                    email = null, // L'email sera récupéré depuis Firebase
+                    isPremium = isPremium,
+                    drinksAlcohol = true,
+                    isHalal = false,
+                    isVegetarian = false,
+                    isVegan = false,
+                    allergies = ""
+                )
+            }
             
-            // Mettre à jour l'utilisateur dans la base de données
-            userDao.updateUser(updatedUser)
+            // Mettre à jour ou insérer l'utilisateur dans la base de données
+            if (userEntity != null) {
+                userDao.updateUser(updatedUser)
+            } else {
+                userDao.insertUser(updatedUser)
+            }
             
-            AuthResult.Success(updatedUser.toDomainModel())
+            // Récupérer l'utilisateur Firebase actuel
+            val currentUser = firebaseAuthDataSource.getCurrentUser().first()
+                ?: return AuthResult.Error("Aucun utilisateur connecté")
+            
+            // Retourner le résultat avec l'utilisateur mis à jour
+            AuthResult.Success(currentUser.copy(isPremium = isPremium))
         } catch (e: Exception) {
             AuthResult.Error("Erreur lors de la mise à jour du statut premium: ${e.message}")
         }
+    }
+    
+    /**
+     * Sauvegarde les préférences par défaut pour un nouvel utilisateur
+     */
+    private suspend fun saveUserPreferences(userId: String) {
+        val userEntity = UserEntity(
+            id = userId,
+            username = "", // Le nom sera récupéré depuis Firebase
+            email = null, // L'email sera récupéré depuis Firebase
+            isPremium = false,
+            drinksAlcohol = true,
+            isHalal = false,
+            isVegetarian = false,
+            isVegan = false,
+            allergies = ""
+        )
+        
+        userDao.insertUser(userEntity)
     }
 } 

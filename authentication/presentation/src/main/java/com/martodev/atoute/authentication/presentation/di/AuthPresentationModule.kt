@@ -11,5 +11,5 @@ import org.koin.dsl.module
 val authPresentationModule = module {
     // ViewModels
     viewModel { AuthViewModel(get(), get(), get(), get(), get()) }
-    viewModel { UserPreferencesViewModel(get(), get(), get()) }
+    viewModel { UserPreferencesViewModel(get(), get(), get(), get()) }
 } 

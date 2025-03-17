@@ -5,6 +5,9 @@
     <!-- Permissions requises pour le scan QR Code -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- Permission Internet pour Firebase -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Configurations pour ZXing Android Embedded -->
     <uses-sdk tools:overrideLibrary="com.google.zxing.client.android" />
