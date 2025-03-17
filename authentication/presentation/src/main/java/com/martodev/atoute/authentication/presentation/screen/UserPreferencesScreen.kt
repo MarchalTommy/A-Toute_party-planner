@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -44,6 +45,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,8 +58,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.martodev.atoute.authentication.presentation.viewmodel.UserPreferencesViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -77,6 +81,7 @@ fun UserPreferencesScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var newAllergy by remember { mutableStateOf("") }
+    var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     
     // Effet pour afficher les erreurs
     LaunchedEffect(state.error) {
@@ -93,6 +98,36 @@ fun UserPreferencesScreen(
     
     // Vérification plus précise de l'état de connexion
     val isUserLoggedIn = state.user != null && !state.user?.id.isNullOrBlank()
+    // Vérifier si l'utilisateur est anonyme (pas d'email)
+    val isAnonymousUser = isUserLoggedIn && state.user?.email == null
+    
+    // Dialogue de confirmation pour la déconnexion d'un utilisateur anonyme
+    if (showLogoutConfirmDialog && isAnonymousUser) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirmDialog = false },
+            title = { Text("Attention") },
+            text = { 
+                Text(
+                    "Vous êtes connecté en tant qu'utilisateur anonyme. Si vous vous déconnectez, toutes vos données seront perdues (événements, préférences, etc.) et ne pourront pas être récupérées.\n\nVoulez-vous vraiment vous déconnecter ?"
+                ) 
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutConfirmDialog = false
+                        viewModel.signOut()
+                    }
+                ) {
+                    Text("Oui, me déconnecter", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirmDialog = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
+    }
     
     Scaffold(
         topBar = {
@@ -161,6 +196,41 @@ fun UserPreferencesScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
+                            }
+                        }
+                    }
+                } else {
+                    // Message de bienvenue pour les utilisateurs connectés
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Bonjour, ${state.user?.username ?: "Utilisateur"}",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 28.sp
+                                )
+                                
+                                if (isAnonymousUser) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Vous êtes connecté en mode anonyme",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(horizontal = 8.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -361,73 +431,76 @@ fun UserPreferencesScreen(
                 
                 // Statut premium
                 item {
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
+                    // Ne pas afficher l'encart premium pour les utilisateurs anonymes
+                    if (!isAnonymousUser) {
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
                         ) {
-                            Text(
-                                text = "Statut premium",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            if (!isUserLoggedIn) {
-                                // Message spécifique pour les utilisateurs non connectés
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "Connectez-vous pour accéder aux fonctionnalités premium",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            } else {
-                                // Switch pour les utilisateurs connectés
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Activer le statut premium")
-                                    Switch(
-                                        checked = state.user?.isPremium ?: false,
-                                        onCheckedChange = { viewModel.updatePremiumStatus(it) }
-                                    )
-                                }
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Statut premium",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
                                 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
                                 
-                                if (state.user?.isPremium == true) {
+                                if (!isUserLoggedIn) {
+                                    // Message spécifique pour les utilisateurs non connectés
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = 8.dp)
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = "Vous bénéficiez des fonctionnalités premium !",
+                                            text = "Connectez-vous pour accéder aux fonctionnalités premium",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 } else {
-                                    Text(
-                                        text = "Passez à la version premium pour débloquer toutes les fonctionnalités !",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                    // Switch pour les utilisateurs connectés
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Activer le statut premium")
+                                        Switch(
+                                            checked = state.user?.isPremium ?: false,
+                                            onCheckedChange = { viewModel.updatePremiumStatus(it) }
+                                        )
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    
+                                    if (state.user?.isPremium == true) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 8.dp)
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                        ) {
+                                            Text(
+                                                text = "Vous bénéficiez des fonctionnalités premium !",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    } else {
+                                        Text(
+                                            text = "Passez à la version premium pour débloquer toutes les fonctionnalités !",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -463,7 +536,15 @@ fun UserPreferencesScreen(
             } else {
                 // Bouton de déconnexion pour les utilisateurs connectés
                 ExtendedFloatingActionButton(
-                    onClick = { viewModel.signOut() },
+                    onClick = { 
+                        if (isAnonymousUser) {
+                            // Montrer le dialogue de confirmation pour utilisateurs anonymes
+                            showLogoutConfirmDialog = true
+                        } else {
+                            // Déconnexion directe pour utilisateurs avec email/mot de passe
+                            viewModel.signOut() 
+                        }
+                    },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(16.dp),
