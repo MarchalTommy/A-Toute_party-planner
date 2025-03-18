@@ -6,6 +6,8 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.set
 
 /**
  * Utilitaire pour générer des QR codes
@@ -37,10 +39,10 @@ object QrCodeUtils {
         val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height, hints)
         
         // Convertir la matrice en bitmap
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(width, height)
         for (x in 0 until width) {
             for (y in 0 until height) {
-                bitmap.setPixel(x, y, if (bitMatrix[x, y]) Color.BLACK else Color.WHITE)
+                bitmap[x, y] = if (bitMatrix[x, y]) Color.BLACK else Color.WHITE
             }
         }
         

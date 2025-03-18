@@ -171,7 +171,7 @@ class FirebaseAuthDataSourceImpl(
             val profileUpdatesBuilder = UserProfileChangeRequest.Builder()
             
             if (username != null) {
-                profileUpdatesBuilder.setDisplayName(username)
+                profileUpdatesBuilder.displayName = username
                 userPreferencesDataStore.saveCurrentUserName(username)
             }
             

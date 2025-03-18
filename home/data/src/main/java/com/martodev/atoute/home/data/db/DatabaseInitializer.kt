@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.core.content.edit
 
 /**
  * Service responsable de l'initialisation de la base de données avec des données de test
@@ -95,7 +96,7 @@ class DatabaseInitializer(
                         }
                         
                         // Marquer la base de données comme initialisée
-                        prefs.edit().putBoolean(KEY_DB_INITIALIZED, true).apply()
+                        prefs.edit { putBoolean(KEY_DB_INITIALIZED, true) }
                         Log.d("DatabaseInitializer", "Base de données initialisée avec succès")
                     } catch (e: Exception) {
                         Log.e("DatabaseInitializer", "Erreur lors de l'initialisation de la base de données", e)
@@ -131,7 +132,7 @@ class DatabaseInitializer(
                     partyEntities.forEach { partyDao.deleteParty(it) }
                     
                     // Réinitialisation du flag
-                    prefs.edit().putBoolean(KEY_DB_INITIALIZED, false).apply()
+                    prefs.edit() { putBoolean(KEY_DB_INITIALIZED, false)}
                     
                     // Réinitialisation avec les nouvelles données
                     initializeDatabaseIfNeeded(scope)

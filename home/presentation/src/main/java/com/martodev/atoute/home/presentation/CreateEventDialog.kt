@@ -1,6 +1,5 @@
 package com.martodev.atoute.home.presentation
 
-import com.martodev.atoute.home.presentation.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +36,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
-import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -58,7 +56,6 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.UUID
 
 // Liste des couleurs disponibles pour les événements
 private val eventColors = listOf(
@@ -94,33 +91,34 @@ fun CreateEventDialog(
     var title by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(eventColors[0]) }
-    
+
     // État pour le DatePicker
     val datePickerState = rememberDatePickerState()
     var showDatePicker by remember { mutableStateOf(false) }
-    
+
     // État pour le TimePicker
     val timePickerState = rememberTimePickerState()
     var showTimePicker by remember { mutableStateOf(false) }
-    
+
     // Formatage de la date et de l'heure pour l'affichage
-    val selectedDateTime = remember(datePickerState.selectedDateMillis, timePickerState.hour, timePickerState.minute) {
-        val date = datePickerState.selectedDateMillis?.let {
-            Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
-        } ?: LocalDateTime.now().toLocalDate()
-        
-        LocalDateTime.of(
-            date.year,
-            date.month,
-            date.dayOfMonth,
-            timePickerState.hour,
-            timePickerState.minute
-        )
-    }
-    
+    val selectedDateTime =
+        remember(datePickerState.selectedDateMillis, timePickerState.hour, timePickerState.minute) {
+            val date = datePickerState.selectedDateMillis?.let {
+                Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+            } ?: LocalDateTime.now().toLocalDate()
+
+            LocalDateTime.of(
+                date.year,
+                date.month,
+                date.dayOfMonth,
+                timePickerState.hour,
+                timePickerState.minute
+            )
+        }
+
     val dateFormatter = DateTimeFormatter.ofPattern("dd MMMM yyyy")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -144,7 +142,7 @@ fun CreateEventDialog(
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -152,7 +150,7 @@ fun CreateEventDialog(
                         )
                     }
                 }
-                
+
                 // Champ pour le titre de l'événement
                 OutlinedTextField(
                     value = title,
@@ -161,7 +159,7 @@ fun CreateEventDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                
+
                 // Champ pour l'adresse
                 OutlinedTextField(
                     value = location,
@@ -177,7 +175,7 @@ fun CreateEventDialog(
                     }
                     // Note: Une véritable autocomplétion nécessiterait l'intégration d'une API comme Google Places
                 )
-                
+
                 // Sélection de la date
                 Row(
                     modifier = Modifier
@@ -203,7 +201,7 @@ fun CreateEventDialog(
                         )
                     }
                 }
-                
+
                 // Sélection de l'heure
                 Row(
                     modifier = Modifier
@@ -229,14 +227,14 @@ fun CreateEventDialog(
                         )
                     }
                 }
-                
+
                 // Sélection de la couleur
                 Text(
                     text = "Couleur de l'événement",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
-                
+
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -261,7 +259,7 @@ fun CreateEventDialog(
                         )
                     }
                 }
-                
+
                 // Information sur les droits du créateur
                 Box(
                     modifier = Modifier
@@ -285,9 +283,9 @@ fun CreateEventDialog(
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Boutons de validation et d'annulation
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -309,7 +307,7 @@ fun CreateEventDialog(
                 }
             }
         }
-        
+
         // DatePicker Dialog
         if (showDatePicker) {
             DatePickerDialog(
@@ -332,7 +330,7 @@ fun CreateEventDialog(
                 DatePicker(state = datePickerState)
             }
         }
-        
+
         // TimePicker Dialog
         if (showTimePicker) {
             Dialog(onDismissRequest = { showTimePicker = false }) {

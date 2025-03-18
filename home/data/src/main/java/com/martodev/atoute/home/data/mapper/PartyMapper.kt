@@ -4,7 +4,6 @@ import com.martodev.atoute.home.data.entity.ParticipantEntity
 import com.martodev.atoute.home.data.entity.PartyEntity
 import com.martodev.atoute.home.data.entity.PartyWithDetails
 import com.martodev.atoute.home.domain.model.Party
-import com.martodev.atoute.home.domain.model.Todo
 
 /**
  * Extension pour convertir une PartyEntity en modèle Party du domaine

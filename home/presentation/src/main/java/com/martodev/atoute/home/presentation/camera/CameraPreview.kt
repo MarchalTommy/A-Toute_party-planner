@@ -13,10 +13,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
 
 private const val TAG = "CameraPreview"
@@ -31,40 +29,40 @@ fun CameraPreview(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    
+
     // Création de PreviewView pour afficher l'aperçu de la caméra
     val previewView = remember { PreviewView(context) }
-    
+
     // Création d'un exécuteur pour l'analyse d'image
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-    
+
     // Création de l'analyseur de QR code
     val analyzer = remember { QrCodeAnalyzer(onQrCodeScanned) }
-    
+
     LaunchedEffect(key1 = previewView) {
         // Initialisation et configuration de la caméra
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        
+
         cameraProviderFuture.addListener({
             try {
                 // Obtention du fournisseur de caméra
                 val cameraProvider = cameraProviderFuture.get()
-                
+
                 // Configurer la prévisualisation
                 val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
+                    it.surfaceProvider = previewView.surfaceProvider
                 }
-                
+
                 // Configuration de l'analyseur d'images
                 val imageAnalysis = ImageAnalysis.Builder()
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build().also {
                         it.setAnalyzer(cameraExecutor, analyzer)
                     }
-                
+
                 // Sélection de la caméra arrière par défaut
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                
+
                 // Liaison des cas d'utilisation de la caméra avec le cycle de vie
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
@@ -73,13 +71,13 @@ fun CameraPreview(
                     preview,
                     imageAnalysis
                 )
-                
+
             } catch (e: Exception) {
                 Log.e(TAG, "Échec de la liaison des cas d'utilisation de la caméra", e)
             }
         }, ContextCompat.getMainExecutor(context))
     }
-    
+
     // AndroidView pour intégrer PreviewView dans Compose
     AndroidView(
         factory = { previewView },

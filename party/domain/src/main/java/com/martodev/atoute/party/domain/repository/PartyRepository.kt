@@ -37,9 +37,5 @@ interface PartyRepository {
      * Supprime une party
      */
     suspend fun deleteParty(partyId: String)
-    
-    /**
-     * Calcule et met à jour le nombre de tâches complétées pour une party
-     */
-    suspend fun updatePartyTodoCounters(partyId: String)
-} 
+
+}

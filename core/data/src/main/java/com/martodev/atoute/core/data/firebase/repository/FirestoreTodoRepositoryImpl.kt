@@ -23,7 +23,7 @@ class FirestoreTodoRepositoryImpl(
         val attributedTo = document.getString(FirestoreTodo.FIELD_ATTRIBUTED_TO)
         val event = document.getString(FirestoreTodo.FIELD_EVENT) ?: ""
         val name = document.getString(FirestoreTodo.FIELD_NAME) ?: ""
-        val isCompleted = document.getBoolean(FirestoreTodo.FIELD_IS_COMPLETED) ?: false
+        val isCompleted = document.getBoolean(FirestoreTodo.FIELD_IS_COMPLETED) == true
         
         return FirestoreTodo(
             id = id,

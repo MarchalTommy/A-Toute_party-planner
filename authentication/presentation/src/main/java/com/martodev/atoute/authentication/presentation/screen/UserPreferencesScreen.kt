@@ -473,7 +473,7 @@ fun UserPreferencesScreen(
                                     ) {
                                         Text("Activer le statut premium")
                                         Switch(
-                                            checked = state.user?.isPremium ?: false,
+                                            checked = state.user?.isPremium == true,
                                             onCheckedChange = { viewModel.updatePremiumStatus(it) }
                                         )
                                     }

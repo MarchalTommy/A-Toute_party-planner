@@ -45,7 +45,7 @@ class InMemoryAuthService : AuthService {
     }
     
     override fun isCurrentUserOwnerOfParty(partyId: String): Boolean {
-        return ownedParties[partyId]?.any { it.userId == currentUserId && it.isAdmin } ?: false
+        return ownedParties[partyId]?.any { it.userId == currentUserId && it.isAdmin } == true
     }
     
     override fun registerCurrentUserAsOwner(partyId: String) {

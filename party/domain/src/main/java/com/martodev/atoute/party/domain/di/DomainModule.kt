@@ -1,6 +1,5 @@
 package com.martodev.atoute.party.domain.di
 
-import com.martodev.atoute.authentication.domain.usecase.GetCurrentUserPremiumStatusUseCase
 import com.martodev.atoute.party.domain.usecase.CheckPriorityTodoLimitUseCase
 import com.martodev.atoute.party.domain.usecase.GetPartyDetailUseCase
 import com.martodev.atoute.party.domain.usecase.GetToBuysByPartyUseCase

@@ -1,9 +1,9 @@
 package com.martodev.atoute
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -27,7 +27,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.martodev.atoute.authentication.presentation.screen.UserPreferencesScreen
 import com.martodev.atoute.home.presentation.HomeScreen
-import org.koin.androidx.compose.koinViewModel
 
 /**
  * Écran principal de l'application avec une barre de navigation inférieure

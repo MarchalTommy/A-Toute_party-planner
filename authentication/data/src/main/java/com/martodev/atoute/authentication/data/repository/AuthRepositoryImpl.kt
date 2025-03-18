@@ -185,16 +185,14 @@ class AuthRepositoryImpl(
             val userEntity = userDao.getUserById(userId).first()
             
             // Créer ou mettre à jour l'entité utilisateur
-            val updatedUser = if (userEntity != null) {
-                userEntity.copy(
-                    drinksAlcohol = preferences.drinksAlcohol,
-                    isHalal = preferences.isHalal,
-                    isVegetarian = preferences.isVegetarian,
-                    isVegan = preferences.isVegan,
-                    allergies = preferences.hasAllergies.joinToString(",")
-                )
-            } else {
-                UserEntity(
+            val updatedUser = userEntity?.copy(
+                drinksAlcohol = preferences.drinksAlcohol,
+                isHalal = preferences.isHalal,
+                isVegetarian = preferences.isVegetarian,
+                isVegan = preferences.isVegan,
+                allergies = preferences.hasAllergies.joinToString(",")
+            )
+                ?: UserEntity(
                     id = userId,
                     username = "", // Le nom sera récupéré depuis Firebase
                     email = null, // L'email sera récupéré depuis Firebase
@@ -205,7 +203,6 @@ class AuthRepositoryImpl(
                     isVegan = preferences.isVegan,
                     allergies = preferences.hasAllergies.joinToString(",")
                 )
-            }
             
             // Mettre à jour ou insérer l'utilisateur dans la base de données
             if (userEntity != null) {
@@ -238,10 +235,8 @@ class AuthRepositoryImpl(
             val userEntity = userDao.getUserById(userId).first()
             
             // Créer ou mettre à jour l'entité utilisateur
-            val updatedUser = if (userEntity != null) {
-                userEntity.copy(isPremium = isPremium)
-            } else {
-                UserEntity(
+            val updatedUser = userEntity?.copy(isPremium = isPremium)
+                ?: UserEntity(
                     id = userId,
                     username = "", // Le nom sera récupéré depuis Firebase
                     email = null, // L'email sera récupéré depuis Firebase
@@ -252,7 +247,6 @@ class AuthRepositoryImpl(
                     isVegan = false,
                     allergies = ""
                 )
-            }
             
             // Mettre à jour ou insérer l'utilisateur dans la base de données
             if (userEntity != null) {

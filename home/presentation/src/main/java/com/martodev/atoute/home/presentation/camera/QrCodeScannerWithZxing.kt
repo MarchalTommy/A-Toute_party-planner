@@ -1,12 +1,8 @@
 package com.martodev.atoute.home.presentation.camera
 
-import android.app.Activity
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.android.Intents
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions

@@ -1,6 +1,5 @@
 package com.martodev.atoute.home.data.di
 
-import android.content.Context
 import androidx.room.Room
 import com.martodev.atoute.home.data.dao.ParticipantDao
 import com.martodev.atoute.home.data.dao.PartyDao
@@ -22,10 +21,10 @@ import org.koin.dsl.module
  * Module Koin pour la couche data du feature Home
  */
 val homeDataModule = module {
-    
+
     // Source de données mock
     single { MockDataSource() }
-    
+
     // Base de données Room
     single {
         Room.databaseBuilder(
@@ -34,13 +33,13 @@ val homeDataModule = module {
             "atoute_db"
         ).build()
     }
-    
+
     // DAOs
     single<PartyDao> { get<ATouteDatabase>().partyDao() }
     single<TodoDao> { get<ATouteDatabase>().todoDao() }
     single<ToBuyDao> { get<ATouteDatabase>().toBuyDao() }
     single<ParticipantDao> { get<ATouteDatabase>().participantDao() }
-    
+
     // Initialisateur de base de données
     single {
         DatabaseInitializer(
@@ -52,7 +51,7 @@ val homeDataModule = module {
             mockDataSource = get()
         )
     }
-    
+
     // Repositories
     single<PartyRepository> { PartyRepositoryImpl(get(), get(), get(), get()) }
     single<TodoRepository> { TodoRepositoryImpl(get(), get(), get()) }

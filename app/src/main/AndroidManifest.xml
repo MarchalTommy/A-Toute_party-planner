@@ -28,7 +28,6 @@
         <!-- Configuration pour l'activité de ZXing Android Embedded -->
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
-            android:screenOrientation="fullSensor"
             android:clearTaskOnLaunch="true"
             android:stateNotNeeded="true"
             android:theme="@style/zxing_CaptureTheme"
@@ -38,7 +37,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.AToute">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

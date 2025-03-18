@@ -103,8 +103,4 @@ class PartyRepositoryImpl(
         partyDao.deletePartyById(partyId)
     }
 
-    override suspend fun updatePartyTodoCounters(partyId: String) {
-        // Pour l'instant, nous ne faisons rien car nous ne pouvons pas utiliser count()
-        // Nous pourrons implémenter cette méthode correctement plus tard
-    }
-} 
+}

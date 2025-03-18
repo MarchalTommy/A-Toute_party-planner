@@ -17,7 +17,7 @@ class GetCurrentUserPremiumStatusUseCase(private val authRepository: AuthReposit
      */
     operator fun invoke(): Flow<Boolean> {
         return authRepository.getCurrentUser().map { user ->
-            user?.isPremium ?: false
+            user?.isPremium == true
         }
     }
 } 

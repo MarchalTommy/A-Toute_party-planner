@@ -24,7 +24,7 @@ class FirestoreToBuyRepositoryImpl(
         val event = document.getString(FirestoreToBuy.FIELD_EVENT) ?: ""
         val name = document.getString(FirestoreToBuy.FIELD_NAME) ?: ""
         val quantity = document.getLong(FirestoreToBuy.FIELD_QUANTITY)?.toInt()
-        val isPurchased = document.getBoolean(FirestoreToBuy.FIELD_IS_PURCHASED) ?: false
+        val isPurchased = document.getBoolean(FirestoreToBuy.FIELD_IS_PURCHASED) == true
         
         return FirestoreToBuy(
             id = id,
