@@ -1,5 +1,6 @@
 package com.martodev.atoute.authentication.data.repository
 
+import com.google.firebase.auth.FirebaseAuth
 import com.martodev.atoute.authentication.data.datasource.FirebaseAuthDataSource
 import com.martodev.atoute.authentication.data.datasource.IUserPreferencesDataStore
 import com.martodev.atoute.authentication.data.datasource.UserDao
@@ -8,9 +9,13 @@ import com.martodev.atoute.authentication.domain.model.AuthResult
 import com.martodev.atoute.authentication.domain.model.User
 import com.martodev.atoute.authentication.domain.model.UserPreferences
 import com.martodev.atoute.authentication.domain.repository.AuthRepository
+import com.martodev.atoute.core.data.firebase.model.FirestoreUser
+import com.martodev.atoute.core.data.firebase.repository.FirestoreUserRepository
+import com.martodev.atoute.core.data.firebase.sync.FirestoreSyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
 
 /**
  * Implémentation du repository d'authentification
@@ -18,11 +23,17 @@ import kotlinx.coroutines.flow.map
  * @property firebaseAuthDataSource Source de données Firebase Auth
  * @property userDao DAO pour accéder aux préférences utilisateur
  * @property userPreferencesDataStore DataStore pour les préférences utilisateur
+ * @property auth Instance de FirebaseAuth
+ * @property userRepository Repository pour les opérations sur Firestore
+ * @property syncManager Manager pour synchroniser les données avec Firestore
  */
 class AuthRepositoryImpl(
     private val firebaseAuthDataSource: FirebaseAuthDataSource,
     private val userDao: UserDao,
-    private val userPreferencesDataStore: IUserPreferencesDataStore
+    private val userPreferencesDataStore: IUserPreferencesDataStore,
+    private val auth: FirebaseAuth,
+    private val userRepository: FirestoreUserRepository,
+    private val syncManager: FirestoreSyncManager
 ) : AuthRepository {
 
     /**
@@ -65,27 +76,44 @@ class AuthRepositoryImpl(
      * @return Résultat de l'opération
      */
     override suspend fun createAnonymousUser(username: String): AuthResult {
-        val result = firebaseAuthDataSource.createAnonymousUser(username)
-        
-        // Si l'authentification a réussi, sauvegarder les préférences par défaut
-        if (result is AuthResult.Success) {
-            saveUserPreferences(result.user.id)
-            
-            // Retourner l'utilisateur avec ses préférences par défaut
-            val defaultPrefs = UserPreferences(
+        return try {
+            val result = auth.signInAnonymously().await()
+            val firebaseUser = result.user ?: throw Exception("Échec de la création de l'utilisateur anonyme")
+
+            // Créer l'entité utilisateur locale
+            val userEntity = UserEntity(
+                id = firebaseUser.uid,
+                username = username,
+                email = null,
+                isPremium = false,
                 drinksAlcohol = true,
                 isHalal = false,
                 isVegetarian = false,
                 isVegan = false,
-                hasAllergies = emptyList()
+                allergies = ""
             )
+            userDao.insertUser(userEntity)
+
+            // Créer l'utilisateur dans Firestore
+            val firestoreUser = FirestoreUser(
+                id = firebaseUser.uid,
+                displayName = username,
+                email = null,
+                events = emptyMap()
+            )
+            userRepository.saveDocument(firestoreUser)
             
-            return AuthResult.Success(
-                result.user.copy(preferences = defaultPrefs)
-            )
+            // Synchroniser les modifications avec Firestore
+            syncManager.pushLocalChanges()
+
+            // Sauvegarder les préférences utilisateur
+            userPreferencesDataStore.saveCurrentUserId(firebaseUser.uid)
+            userPreferencesDataStore.saveCurrentUserName(username)
+
+            AuthResult.Success(userEntity.toDomainModel())
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Une erreur est survenue")
         }
-        
-        return result
     }
 
     /**
@@ -106,6 +134,21 @@ class AuthRepositoryImpl(
         // Si l'authentification a réussi, sauvegarder les préférences par défaut
         if (result is AuthResult.Success) {
             saveUserPreferences(result.user.id)
+            
+            // Créer l'utilisateur dans Firestore s'il n'existe pas déjà
+            val existingUser = userRepository.getDocumentByIdSync(result.user.id)
+            if (existingUser == null) {
+                val firestoreUser = FirestoreUser(
+                    id = result.user.id,
+                    displayName = username,
+                    email = email,
+                    events = emptyMap()
+                )
+                userRepository.saveDocument(firestoreUser)
+                
+                // Synchroniser les modifications avec Firestore
+                syncManager.pushLocalChanges()
+            }
             
             // Retourner l'utilisateur avec ses préférences par défaut
             // Ces préférences ont été sauvegardées en base locale par saveUserPreferences
@@ -166,7 +209,28 @@ class AuthRepositoryImpl(
      * Déconnecte l'utilisateur actuel
      */
     override suspend fun signOut() {
+        // Vérifier si l'utilisateur est anonyme avant de le déconnecter
+        val currentUser = auth.currentUser
+        val isAnonymous = currentUser?.isAnonymous ?: false
+        val userId = currentUser?.uid
+        
+        // Si l'utilisateur est anonyme, supprimer ses données de Firestore
+        if (isAnonymous && userId != null) {
+            try {
+                // Supprimer l'utilisateur de Firestore
+                userRepository.deleteDocument(userId)
+                
+                // Supprimer l'utilisateur de Firebase Auth
+                currentUser.delete().await()
+            } catch (e: Exception) {
+                // En cas d'échec, continuer avec la déconnexion normale
+                // Logger l'erreur si nécessaire
+            }
+        }
+        
+        // Déconnexion normale
         firebaseAuthDataSource.signOut()
+        userPreferencesDataStore.clearCurrentUser()
     }
 
     /**

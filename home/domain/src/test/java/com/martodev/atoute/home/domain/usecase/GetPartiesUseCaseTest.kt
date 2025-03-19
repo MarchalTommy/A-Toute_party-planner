@@ -2,6 +2,7 @@ package com.martodev.atoute.home.domain.usecase
 
 import com.martodev.atoute.home.domain.model.Party
 import com.martodev.atoute.home.domain.repository.PartyRepository
+import com.martodev.atoute.home.domain.service.AuthService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -17,12 +18,17 @@ import java.time.LocalDateTime
 class GetPartiesUseCaseTest {
     
     private lateinit var partyRepository: PartyRepository
+    private lateinit var authService: AuthService
     private lateinit var getPartiesUseCase: GetPartiesUseCase
     
     @Before
     fun setUp() {
         partyRepository = mock()
-        getPartiesUseCase = GetPartiesUseCase(partyRepository)
+        authService = mock()
+        getPartiesUseCase = GetPartiesUseCase(partyRepository, authService)
+        
+        // Configurer l'AuthService pour simuler un utilisateur connecté
+        whenever(authService.getCurrentUserId()).thenReturn("user123")
     }
     
     @Test
@@ -56,5 +62,17 @@ class GetPartiesUseCaseTest {
         
         // Then
         assertEquals("Une liste vide doit être retournée", emptyList<Party>(), result)
+    }
+    
+    @Test
+    fun invokeReturnsEmptyFlowWhenUserIsNotAuthenticated() = runTest {
+        // Given
+        whenever(authService.getCurrentUserId()).thenReturn(null)
+        
+        // When
+        val result = getPartiesUseCase().first()
+        
+        // Then
+        assertEquals("Une liste vide doit être retournée quand l'utilisateur n'est pas connecté", emptyList<Party>(), result)
     }
 } 

@@ -1,4 +1,4 @@
-package com.martodev.atoute.home.data.db
+package com.martodev.atoute.core.data.db
 
 import android.content.Context
 import androidx.room.Database
@@ -7,15 +7,15 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.martodev.atoute.home.data.dao.ParticipantDao
-import com.martodev.atoute.home.data.dao.PartyDao
-import com.martodev.atoute.home.data.dao.ToBuyDao
-import com.martodev.atoute.home.data.dao.TodoDao
-import com.martodev.atoute.home.data.entity.ParticipantEntity
-import com.martodev.atoute.home.data.entity.PartyEntity
-import com.martodev.atoute.home.data.entity.ToBuyEntity
-import com.martodev.atoute.home.data.entity.TodoEntity
-import com.martodev.atoute.home.data.util.DateConverters
+import com.martodev.atoute.core.data.dao.ParticipantDao
+import com.martodev.atoute.core.data.dao.PartyDao
+import com.martodev.atoute.core.data.dao.ToBuyDao
+import com.martodev.atoute.core.data.dao.TodoDao
+import com.martodev.atoute.core.data.entity.ParticipantEntity
+import com.martodev.atoute.core.data.entity.PartyEntity
+import com.martodev.atoute.core.data.entity.ToBuyEntity
+import com.martodev.atoute.core.data.entity.TodoEntity
+import com.martodev.atoute.core.data.util.DateConverters
 
 /**
  * Base de données Room pour l'application A-Toute

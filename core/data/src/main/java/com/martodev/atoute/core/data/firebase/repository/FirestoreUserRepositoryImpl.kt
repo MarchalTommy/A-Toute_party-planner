@@ -2,12 +2,12 @@ package com.martodev.atoute.core.data.firebase.repository
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.martodev.atoute.core.data.firebase.model.FirestoreUser
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -16,7 +16,7 @@ import kotlinx.coroutines.tasks.await
  * @property auth Instance de FirebaseAuth
  */
 class FirestoreUserRepositoryImpl(
-    firestore: FirebaseFirestore,
+    firestore: FirebaseFirestore = Firebase.firestore,
     private val auth: FirebaseAuth
 ) : FirestoreRepositoryImpl<FirestoreUser>(firestore, FirestoreUser.COLLECTION_NAME), FirestoreUserRepository {
 
@@ -50,55 +50,87 @@ class FirestoreUserRepositoryImpl(
         return model.id
     }
 
-    override fun getCurrentUser(): Flow<FirestoreUser?> = callbackFlow {
-        val authStateListener = FirebaseAuth.AuthStateListener { auth ->
-            val firebaseUser = auth.currentUser
-            if (firebaseUser != null) {
-                getCollectionReference().document(firebaseUser.uid)
-                    .get()
-                    .addOnSuccessListener { document ->
-                        trySend(documentToModel(document))
-                    }
-                    .addOnFailureListener {
-                        trySend(null)
-                    }
-            } else {
-                trySend(null)
-            }
-        }
-        
-        auth.addAuthStateListener(authStateListener)
-        
-        awaitClose {
-            auth.removeAuthStateListener(authStateListener)
-        }
-    }
-
-    override suspend fun getCurrentUserSync(): FirestoreUser? {
-        val firebaseUser = auth.currentUser ?: return null
-        return getDocumentByIdSync(firebaseUser.uid)
-    }
-
     override suspend fun addEventToUser(userId: String, eventId: String, isCreator: Boolean) {
-        val role = if (isCreator) FirestoreUser.ROLE_CREATOR else FirestoreUser.ROLE_PARTICIPANT
-        
-        getCollectionReference().document(userId)
-            .update(
-                "${FirestoreUser.FIELD_EVENTS}.$role", eventId
-            ).await()
+        try {
+            val userRef = firestore.collection(FirestoreUser.COLLECTION_NAME).document(userId)
+            val role = if (isCreator) FirestoreUser.ROLE_CREATOR else FirestoreUser.ROLE_PARTICIPANT
+            
+            firestore.runTransaction { transaction ->
+                val userDoc = transaction.get(userRef)
+                if (userDoc.exists()) {
+                    val events = userDoc.get(FirestoreUser.FIELD_EVENTS) as? Map<String, String> ?: emptyMap()
+                    val updatedEvents = events + (eventId to role)
+                    transaction.update(userRef, FirestoreUser.FIELD_EVENTS, updatedEvents)
+                }
+            }.await()
+        } catch (e: Exception) {
+            throw e
+        }
     }
 
     override suspend fun removeEventFromUser(userId: String, eventId: String) {
-        // Récupérer l'utilisateur pour trouver le rôle de l'événement
-        val user = getDocumentByIdSync(userId) ?: return
-        
-        // Trouver le rôle de l'événement
-        val roleToRemove = user.events.entries.find { it.value == eventId }?.key ?: return
-        
-        // Supprimer l'événement
-        getCollectionReference().document(userId)
-            .update(
-                "${FirestoreUser.FIELD_EVENTS}.$roleToRemove", FieldValue.delete()
-            ).await()
+        try {
+            val userRef = firestore.collection(FirestoreUser.COLLECTION_NAME).document(userId)
+            
+            firestore.runTransaction { transaction ->
+                val userDoc = transaction.get(userRef)
+                if (userDoc.exists()) {
+                    val events = userDoc.get(FirestoreUser.FIELD_EVENTS) as? Map<String, String> ?: emptyMap()
+                    val updatedEvents = events - eventId
+                    transaction.update(userRef, FirestoreUser.FIELD_EVENTS, updatedEvents)
+                }
+            }.await()
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    override suspend fun getDocumentByIdSync(id: String): FirestoreUser? {
+        return try {
+            firestore.collection(FirestoreUser.COLLECTION_NAME)
+                .document(id)
+                .get()
+                .await()
+                .toObject(FirestoreUser::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override suspend fun saveDocument(document: FirestoreUser): String {
+        return try {
+            firestore.collection(FirestoreUser.COLLECTION_NAME)
+                .document(document.id)
+                .set(document)
+                .await()
+            document.id
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
+    override suspend fun deleteDocument(id: String) {
+        try {
+            // Supprimer le document utilisateur
+            firestore.collection(FirestoreUser.COLLECTION_NAME)
+                .document(id)
+                .delete()
+                .await()
+        } catch (e: Exception) {
+            // Gérer l'erreur si nécessaire
+            throw e
+        }
+    }
+
+    override fun getDocumentById(id: String): Flow<FirestoreUser?> = flow {
+        try {
+            val document = firestore.collection(FirestoreUser.COLLECTION_NAME)
+                .document(id)
+                .get()
+                .await()
+            emit(document.toObject(FirestoreUser::class.java))
+        } catch (e: Exception) {
+            emit(null)
+        }
     }
 } 

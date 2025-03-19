@@ -118,6 +118,9 @@ class HomeViewModel(
      */
     fun createEvent(title: String, date: LocalDateTime, location: String, color: Long) {
         viewModelScope.launch {
+            // Récupérer l'ID de l'utilisateur courant
+            val currentUserId = authService.getCurrentUserId() ?: return@launch
+            
             // Créer un nouveau Party avec les informations fournies (en utilisant le modèle de domaine)
             val newParty = DomainParty(
                 id = UUID.randomUUID().toString(),
@@ -131,9 +134,11 @@ class HomeViewModel(
                 // Sauvegarder dans le repository
                 val partyId = savePartyUseCase(newParty)
 
-                // Enregistrer l'utilisateur courant comme propriétaire
-                authService.registerCurrentUserAsOwner(partyId)
-
+                // Enregistrer l'utilisateur courant comme propriétaire et participant
+                // Récupérer le nom de l'utilisateur ou utiliser "Moi" par défaut
+                val userName = "Moi" // Peut être remplacé par le nom réel de l'utilisateur si disponible
+                authService.registerCurrentUserAsOwner(partyId, userName)
+                
                 // Mettre à jour la liste des événements
                 loadParties()
             } catch (e: SavePartyUseCase.PartyLimitReachedException) {

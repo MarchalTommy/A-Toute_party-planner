@@ -1,61 +1,56 @@
 package com.martodev.atoute.home.domain.service
 
-import com.martodev.atoute.home.domain.model.PartyOwner
-import java.util.UUID
-
 /**
- * Service d'authentification simple pour gérer l'utilisateur actuel et ses droits
+ * Interface pour gérer les services d'authentification
  */
 interface AuthService {
     /**
-     * Obtient l'ID de l'utilisateur actuellement connecté
-     * @return l'ID de l'utilisateur ou null si aucun utilisateur n'est connecté
+     * Récupère l'ID de l'utilisateur courant
+     * @return ID de l'utilisateur, ou null si non connecté
      */
     fun getCurrentUserId(): String?
     
     /**
-     * Vérifie si l'utilisateur courant est le propriétaire d'un événement
-     * @param partyId l'ID de l'événement à vérifier
-     * @return true si l'utilisateur courant est propriétaire de l'événement, false sinon
+     * Vérifie si l'utilisateur courant est propriétaire d'une party
+     * @param partyId l'ID de la party à vérifier
+     * @return true si l'utilisateur est propriétaire, false sinon
      */
     fun isCurrentUserOwnerOfParty(partyId: String): Boolean
     
     /**
      * Enregistre l'utilisateur courant comme propriétaire d'un événement
      * @param partyId l'ID de l'événement dont l'utilisateur devient propriétaire
+     * @param userName nom de l'utilisateur (optionnel)
      */
-    fun registerCurrentUserAsOwner(partyId: String)
+    fun registerCurrentUserAsOwner(partyId: String, userName: String? = null)
     
     /**
-     * Obtient la liste des événements dont l'utilisateur courant est propriétaire
-     * @return la liste des IDs d'événements possédés par l'utilisateur courant
+     * Récupère la liste des événements dont l'utilisateur courant est propriétaire
+     * @return liste des IDs de parties
      */
     fun getOwnedParties(): List<String>
 }
 
 /**
- * Implémentation simple du service d'authentification qui conserve les données en mémoire
+ * Implémentation en mémoire de AuthService pour les tests
  */
 class InMemoryAuthService : AuthService {
-    private val currentUserId = UUID.randomUUID().toString()
-    private val ownedParties = mutableMapOf<String, MutableList<PartyOwner>>()
+    private val currentUserId = "user123"
+    private val ownedParties = mutableMapOf<String, Boolean>()
     
-    override fun getCurrentUserId(): String {
+    override fun getCurrentUserId(): String? {
         return currentUserId
     }
     
     override fun isCurrentUserOwnerOfParty(partyId: String): Boolean {
-        return ownedParties[partyId]?.any { it.userId == currentUserId && it.isAdmin } == true
+        return ownedParties[partyId] == true
     }
     
-    override fun registerCurrentUserAsOwner(partyId: String) {
-        val owners = ownedParties.getOrPut(partyId) { mutableListOf() }
-        owners.add(PartyOwner(currentUserId, partyId))
+    override fun registerCurrentUserAsOwner(partyId: String, userName: String?) {
+        ownedParties[partyId] = true
     }
     
     override fun getOwnedParties(): List<String> {
-        return ownedParties.entries
-            .filter { entry -> entry.value.any { it.userId == currentUserId } }
-            .map { it.key }
+        return ownedParties.filter { it.value }.map { it.key }
     }
 } 

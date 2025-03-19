@@ -1,5 +1,6 @@
 package com.martodev.atoute.party.data.di
 
+import com.martodev.atoute.core.data.firebase.sync.FirestoreSyncManager
 import com.martodev.atoute.party.data.repository.PartyRepositoryImpl
 import com.martodev.atoute.party.data.repository.ToBuyRepositoryAdapter
 import com.martodev.atoute.party.data.repository.TodoRepositoryAdapter
@@ -16,7 +17,9 @@ val partyDataModule = module {
     single<PartyRepository> { 
         PartyRepositoryImpl(
             partyDao = get(),
-            todoDao = get()
+            todoDao = get(),
+            participantDao = get(),
+            syncManager = get<FirestoreSyncManager>()
         ) 
     }
     

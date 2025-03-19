@@ -42,7 +42,7 @@ android {
 
 dependencies {
     implementation(project(":party:domain"))
-    implementation(project(":home:data")) // Pour accéder à la base de données partagée
+    implementation(project(":core:data")) // Pour accéder à la base de données partagée
     implementation(project(":home:domain")) // Pour accéder aux repositories du module Home
 
     // Core Android

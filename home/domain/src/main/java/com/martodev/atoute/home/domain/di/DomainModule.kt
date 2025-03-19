@@ -21,12 +21,12 @@ val homeDomainModule = module {
     single<AuthService> { InMemoryAuthService() }
 
     // Use cases
-    factory { GetPartiesUseCase(get()) }
+    factory { GetPartiesUseCase(get(), get()) }
     factory { GetPriorityTodosUseCase(get()) }
     factory { SavePartyUseCase(get(), get()) }
-    factory { UpdateTodoPriorityUseCase(get()) }
-    factory { UpdateTodoStatusUseCase(get()) }
-    factory { CheckPartyLimitUseCase(get(), get()) }
     factory { SaveTodoUseCase(get()) }
+    factory { UpdateTodoStatusUseCase(get()) }
+    factory { UpdateTodoPriorityUseCase(get()) }
     factory { SaveToBuyUseCase(get()) }
+    factory { CheckPartyLimitUseCase(get(), get()) }
 }

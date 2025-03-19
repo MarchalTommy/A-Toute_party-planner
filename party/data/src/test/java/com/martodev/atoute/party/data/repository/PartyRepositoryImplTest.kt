@@ -1,9 +1,11 @@
 package com.martodev.atoute.party.data.repository
 
-import com.martodev.atoute.home.data.dao.PartyDao
-import com.martodev.atoute.home.data.dao.TodoDao
-import com.martodev.atoute.home.data.entity.PartyEntity
-import com.martodev.atoute.home.data.entity.PartyWithDetails
+import com.martodev.atoute.core.data.dao.ParticipantDao
+import com.martodev.atoute.core.data.dao.PartyDao
+import com.martodev.atoute.core.data.dao.TodoDao
+import com.martodev.atoute.core.data.entity.PartyEntity
+import com.martodev.atoute.core.data.entity.PartyWithDetails
+import com.martodev.atoute.core.data.firebase.sync.FirestoreSyncManager
 import com.martodev.atoute.party.domain.model.Party
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -24,13 +26,17 @@ class PartyRepositoryImplTest {
     
     private lateinit var partyDao: PartyDao
     private lateinit var todoDao: TodoDao
+    private lateinit var participantDao: ParticipantDao
+    private lateinit var syncManager: FirestoreSyncManager
     private lateinit var partyRepository: PartyRepositoryImpl
     
     @Before
     fun setUp() {
         partyDao = mock()
         todoDao = mock()
-        partyRepository = PartyRepositoryImpl(partyDao, todoDao)
+        participantDao = mock()
+        syncManager = mock()
+        partyRepository = PartyRepositoryImpl(partyDao, todoDao, participantDao, syncManager)
     }
     
     @Test
@@ -80,6 +86,34 @@ class PartyRepositoryImplTest {
         assertEquals("New Year party", result[1].description)
         assertEquals(3, result[1].todoCount)
         assertEquals(0, result[1].completedTodoCount)
+    }
+    
+    @Test
+    fun getAccessiblePartiesConvertsEntitiesToDomainModels() = runTest {
+        // Given
+        val userId = "user123"
+        val partyEntities = listOf(
+            PartyEntity(
+                id = "1",
+                title = "Party 1",
+                date = LocalDateTime.now(),
+                location = "Paris",
+                description = "Christmas party",
+                color = 0xFFFF0000,
+                todoCount = 5,
+                completedTodoCount = 2
+            )
+        )
+        
+        whenever(partyDao.getPartiesByParticipantId(userId)).thenReturn(flowOf(partyEntities))
+        
+        // When
+        val result = partyRepository.getAccessibleParties(userId).first()
+        
+        // Then
+        assertEquals(1, result.size)
+        assertEquals("1", result[0].id)
+        assertEquals("Party 1", result[0].title)
     }
     
     @Test
@@ -253,7 +287,7 @@ class PartyRepositoryImplTest {
     }
     
     @Test
-    fun deletePartyDelegatesCallToDao() = runTest {
+    fun deletePartyCallsDeletePartyById() = runTest {
         // Given
         val partyId = "1"
         

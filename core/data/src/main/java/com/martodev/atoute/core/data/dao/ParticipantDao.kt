@@ -33,6 +33,24 @@ interface ParticipantDao {
     suspend fun getParticipantsByPartyIdSync(partyId: String): List<ParticipantEntity>
     
     /**
+     * Récupère les participations d'un utilisateur spécifique
+     */
+    @Query("SELECT * FROM participants WHERE userId = :userId")
+    fun getParticipationsByUserId(userId: String): Flow<List<ParticipantEntity>>
+    
+    /**
+     * Récupère les participations d'un utilisateur spécifique (version synchrone)
+     */
+    @Query("SELECT * FROM participants WHERE userId = :userId")
+    suspend fun getParticipationsByUserIdSync(userId: String): List<ParticipantEntity>
+    
+    /**
+     * Vérifie si un utilisateur est participant à un événement
+     */
+    @Query("SELECT EXISTS(SELECT 1 FROM participants WHERE partyId = :partyId AND userId = :userId)")
+    suspend fun isUserParticipant(partyId: String, userId: String): Boolean
+    
+    /**
      * Insère un participant
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -55,4 +73,10 @@ interface ParticipantDao {
      */
     @Query("DELETE FROM participants WHERE partyId = :partyId")
     suspend fun deleteParticipantsByPartyId(partyId: String)
+    
+    /**
+     * Supprime les participations d'un utilisateur spécifique
+     */
+    @Query("DELETE FROM participants WHERE userId = :userId")
+    suspend fun deleteParticipationsByUserId(userId: String)
 } 

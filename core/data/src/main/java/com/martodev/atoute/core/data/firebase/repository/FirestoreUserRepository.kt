@@ -4,33 +4,36 @@ import com.martodev.atoute.core.data.firebase.model.FirestoreUser
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Interface pour les opérations Firestore liées aux utilisateurs
+ * Interface du repository Firestore pour les utilisateurs
  */
-interface FirestoreUserRepository : FirestoreRepository<FirestoreUser> {
+interface FirestoreUserRepository {
     /**
-     * Récupère l'utilisateur actuellement connecté
-     * @return Flow contenant l'utilisateur connecté ou null s'il n'est pas connecté
+     * Récupère un document par son ID de manière synchrone
      */
-    fun getCurrentUser(): Flow<FirestoreUser?>
-    
+    suspend fun getDocumentByIdSync(id: String): FirestoreUser?
+
     /**
-     * Récupère l'utilisateur actuellement connecté de manière synchrone
-     * @return L'utilisateur connecté ou null s'il n'est pas connecté
+     * Sauvegarde un document
      */
-    suspend fun getCurrentUserSync(): FirestoreUser?
-    
+    suspend fun saveDocument(document: FirestoreUser): String
+
+    /**
+     * Supprime un document
+     */
+    suspend fun deleteDocument(id: String)
+
     /**
      * Ajoute un événement à un utilisateur
-     * @param userId ID de l'utilisateur
-     * @param eventId ID de l'événement
-     * @param isCreator Indique si l'utilisateur est le créateur de l'événement
      */
     suspend fun addEventToUser(userId: String, eventId: String, isCreator: Boolean)
-    
+
     /**
-     * Supprime un événement d'un utilisateur
-     * @param userId ID de l'utilisateur
-     * @param eventId ID de l'événement
+     * Retire un événement d'un utilisateur
      */
     suspend fun removeEventFromUser(userId: String, eventId: String)
+
+    /**
+     * Récupère un document par son ID de manière asynchrone
+     */
+    fun getDocumentById(id: String): Flow<FirestoreUser?>
 } 

@@ -19,12 +19,14 @@ import androidx.room.PrimaryKey
         )
     ],
     indices = [
-        Index("partyId")
+        Index("partyId"),
+        Index("userId")
     ]
 )
 data class ParticipantEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
-    val partyId: String
+    val partyId: String,
+    val userId: String = "" // ID de l'utilisateur Firebase
 ) 

@@ -1,11 +1,12 @@
 package com.martodev.atoute
 
 import android.app.Application
-import com.martodev.atoute.authentication.data.di.authDataModule
+import com.martodev.atoute.authentication.data.di.authenticationDataModule
 import com.martodev.atoute.authentication.domain.di.authDomainModule
 import com.martodev.atoute.authentication.presentation.di.authPresentationModule
+import com.martodev.atoute.core.data.db.DatabaseInitializer
+import com.martodev.atoute.core.data.di.databaseModule
 import com.martodev.atoute.core.data.di.networkModule
-import com.martodev.atoute.home.data.db.DatabaseInitializer
 import com.martodev.atoute.home.data.di.homeDataModule
 import com.martodev.atoute.home.domain.di.homeDomainModule
 import com.martodev.atoute.home.presentation.di.homePresentationModule
@@ -47,6 +48,9 @@ class ATouteApplication : Application() {
                     // Module réseau pour Firestore
                     networkModule,
                     
+                    // Module de base de données
+                    databaseModule,
+                    
                     // Modules du feature Home
                     homeDataModule,
                     homeDomainModule,
@@ -59,7 +63,7 @@ class ATouteApplication : Application() {
                     
                     // Modules du feature Authentication
                     authDomainModule,
-                    authDataModule,
+                    authenticationDataModule,
                     authPresentationModule
                 )
             )

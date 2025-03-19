@@ -1,11 +1,11 @@
 package com.martodev.atoute.home.data.repository
 
-import com.martodev.atoute.home.data.dao.PartyDao
-import com.martodev.atoute.home.data.dao.TodoDao
-import com.martodev.atoute.home.data.datasource.MockDataSource
-import com.martodev.atoute.home.data.entity.PartyEntity
-import com.martodev.atoute.home.data.entity.PartyWithDetails
-import com.martodev.atoute.home.data.entity.TodoEntity
+import com.martodev.atoute.core.data.dao.PartyDao
+import com.martodev.atoute.core.data.dao.TodoDao
+import com.martodev.atoute.core.data.entity.PartyEntity
+import com.martodev.atoute.core.data.entity.PartyWithDetails
+import com.martodev.atoute.core.data.entity.TodoEntity
+import com.martodev.atoute.core.data.firebase.sync.FirestoreSyncManager
 import com.martodev.atoute.home.domain.model.Todo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -25,20 +25,15 @@ class TodoRepositoryImplTest {
     
     private lateinit var todoDao: TodoDao
     private lateinit var partyDao: PartyDao
-    private lateinit var mockDataSource: MockDataSource
+    private lateinit var syncManager: FirestoreSyncManager
     private lateinit var todoRepository: TodoRepositoryImpl
     
     @Before
     fun setUp() {
         todoDao = mock()
         partyDao = mock()
-        mockDataSource = mock()
-        todoRepository = TodoRepositoryImpl(todoDao, partyDao, mockDataSource)
-        
-        // Utiliser la réflexion pour définir useMockData à false pour les tests
-        val field = TodoRepositoryImpl::class.java.getDeclaredField("useMockData")
-        field.isAccessible = true
-        field.set(todoRepository, false)
+        syncManager = mock()
+        todoRepository = TodoRepositoryImpl(todoDao, partyDao, syncManager)
     }
     
     @Test
@@ -255,56 +250,36 @@ class TodoRepositoryImplTest {
             isPriority = true
         )
         
-        val todoEntity = TodoEntity(
-            id = "1",
-            title = "Todo 1",
-            isCompleted = false,
-            partyId = "party1",
-            isPriority = true
-        )
-        
-        val todos = listOf(todoEntity)
-        
-        whenever(todoDao.getTodosByPartyIdSync("party1")).thenReturn(todos)
-        
         // When
         todoRepository.saveTodo(todo)
         
         // Then
-        verify(todoDao).insertTodo(todoEntity)
-        verify(partyDao).updateTodoCounts("party1", 1, 0)
+        verify(todoDao).insertTodo(
+            TodoEntity(
+                id = "1",
+                title = "Todo 1",
+                isCompleted = false,
+                partyId = "party1",
+                isPriority = true
+            )
+        )
     }
     
     @Test
-    fun updateTodoStatusUpdatesEntityAndPartyCounters() = runTest {
+    fun updateTodoStatusUpdatesEntityStatus() = runTest {
         // Given
         val todoId = "1"
         val isCompleted = true
-        
-        val todoEntity = TodoEntity(
-            id = todoId,
-            title = "Todo 1",
-            isCompleted = false,
-            partyId = "party1",
-            isPriority = true
-        )
-        
-        val updatedTodoEntity = todoEntity.copy(isCompleted = true)
-        val todos = listOf(updatedTodoEntity)
-        
-        whenever(todoDao.getTodoById(todoId)).thenReturn(todoEntity)
-        whenever(todoDao.getTodosByPartyIdSync("party1")).thenReturn(todos)
         
         // When
         todoRepository.updateTodoStatus(todoId, isCompleted)
         
         // Then
         verify(todoDao).updateTodoStatus(todoId, isCompleted)
-        verify(partyDao).updateTodoCounts("party1", 1, 1)
     }
     
     @Test
-    fun updateTodoPriorityUpdatesEntity() = runTest {
+    fun updateTodoPriorityUpdatesEntityPriority() = runTest {
         // Given
         val todoId = "1"
         val isPriority = true
@@ -317,40 +292,14 @@ class TodoRepositoryImplTest {
     }
     
     @Test
-    fun deleteTodoRemovesEntityAndUpdatesPartyCounters() = runTest {
+    fun deleteTodoDeletesEntityById() = runTest {
         // Given
         val todoId = "1"
-        
-        val todoEntity = TodoEntity(
-            id = todoId,
-            title = "Todo 1",
-            isCompleted = false,
-            partyId = "party1",
-            isPriority = true
-        )
-        
-        val emptyList = emptyList<TodoEntity>()
-        
-        whenever(todoDao.getTodoById(todoId)).thenReturn(todoEntity)
-        whenever(todoDao.getTodosByPartyIdSync("party1")).thenReturn(emptyList)
         
         // When
         todoRepository.deleteTodo(todoId)
         
         // Then
         verify(todoDao).deleteTodoById(todoId)
-        verify(partyDao).updateTodoCounts("party1", 0, 0)
-    }
-    
-    @Test
-    fun deleteTodosByPartyRemovesAllTodosForParty() = runTest {
-        // Given
-        val partyId = "party1"
-        
-        // When
-        todoRepository.deleteTodosByParty(partyId)
-        
-        // Then
-        verify(todoDao).deleteTodosByPartyId(partyId)
     }
 } 

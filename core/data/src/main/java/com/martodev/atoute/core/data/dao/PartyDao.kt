@@ -34,6 +34,18 @@ interface PartyDao {
     @Query("SELECT * FROM parties WHERE id = :partyId")
     suspend fun getPartyById(partyId: String): PartyEntity?
     
+    /**
+     * Récupère les événements où l'utilisateur est participant
+     */
+    @Query("SELECT p.* FROM parties p INNER JOIN participants part ON p.id = part.partyId WHERE part.userId = :userId ORDER BY p.date ASC")
+    fun getPartiesByParticipantId(userId: String): Flow<List<PartyEntity>>
+    
+    /**
+     * Récupère les événements où l'utilisateur est participant (version synchrone)
+     */
+    @Query("SELECT p.* FROM parties p INNER JOIN participants part ON p.id = part.partyId WHERE part.userId = :userId ORDER BY p.date ASC")
+    suspend fun getPartiesByParticipantIdSync(userId: String): List<PartyEntity>
+    
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertParty(party: PartyEntity): Long
     
