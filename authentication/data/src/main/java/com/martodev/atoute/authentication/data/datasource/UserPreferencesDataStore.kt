@@ -7,7 +7,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 
 /**
  * Clé pour le DataStore des préférences utilisateur
@@ -80,6 +82,22 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
         context.userPreferencesDataStore.edit { preferences ->
             preferences.remove(CURRENT_USER_ID)
             preferences.remove(USER_NAME)
+        }
+    }
+    
+    /**
+     * Récupère le nom d'utilisateur actuel de manière synchrone
+     *
+     * @return Le nom d'utilisateur ou une chaîne vide si non trouvé
+     */
+    override fun getCurrentUserNameSync(): String {
+        try {
+            val dataStore = context.userPreferencesDataStore
+            val preferences = runBlocking { dataStore.data.first() }
+            return preferences[USER_NAME] ?: ""
+        } catch (e: Exception) {
+            println("Erreur lors de la récupération synchrone du nom d'utilisateur: ${e.message}")
+            return ""
         }
     }
 } 

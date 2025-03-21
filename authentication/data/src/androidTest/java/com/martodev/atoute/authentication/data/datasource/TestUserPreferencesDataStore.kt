@@ -74,4 +74,14 @@ class TestUserPreferencesDataStore(
             preferences.remove(USER_NAME)
         }
     }
+    
+    /**
+     * Récupère le nom d'utilisateur actuel de manière synchrone
+     *
+     * @return Le nom d'utilisateur ou une chaîne vide si non trouvé
+     */
+    override fun getCurrentUserNameSync(): String {
+        // Pour les tests, utiliser une valeur par défaut
+        return "Test User"
+    }
 } 

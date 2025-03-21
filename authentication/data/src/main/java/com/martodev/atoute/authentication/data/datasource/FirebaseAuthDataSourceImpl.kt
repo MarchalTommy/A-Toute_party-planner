@@ -64,18 +64,47 @@ class FirebaseAuthDataSourceImpl(
             val authResult = auth.signInAnonymously().await()
             val firebaseUser = authResult.user ?: throw Exception("Échec de la création de l'utilisateur anonyme")
             
+            println("INFO: Création d'un utilisateur anonyme avec le nom: $username")
+            
+            // Sauvegarder d'abord le pseudo dans les préférences locales
+            userPreferencesDataStore.saveCurrentUserName(username)
+            println("INFO: Nom d'utilisateur sauvegardé dans les préférences locales: $username")
+            
             // Mettre à jour le profil avec le pseudo
             val profileUpdates = UserProfileChangeRequest.Builder()
                 .setDisplayName(username)
                 .build()
             
+            // Mettre à jour le profil et attendre que ce soit fait
             firebaseUser.updateProfile(profileUpdates).await()
+            println("INFO: Profil mis à jour avec le displayName: $username")
             
-            // Sauvegarder le pseudo dans les préférences locales
-            userPreferencesDataStore.saveCurrentUserName(username)
+            // Recharger l'utilisateur pour s'assurer que les modifications ont été appliquées
+            firebaseUser.reload().await()
             
-            // Retourner le résultat
-            AuthResult.Success(firebaseUser.toDomainModel())
+            // Vérifier que le displayName a bien été mis à jour
+            val updatedUser = auth.currentUser
+            if (updatedUser?.displayName != username) {
+                println("AVERTISSEMENT: Le displayName n'a pas été mis à jour correctement pour l'utilisateur anonyme.")
+                println("DisplayName actuel: ${updatedUser?.displayName}, username souhaité: $username")
+                
+                // Faire une seconde tentative
+                updatedUser?.updateProfile(profileUpdates)?.await()
+                updatedUser?.reload()?.await()
+                
+                // Vérifier à nouveau
+                if (auth.currentUser?.displayName != username) {
+                    println("ÉCHEC: Deuxième tentative de mise à jour du displayName a échoué.")
+                    println("Utilisation du nom stocké dans les préférences locales: $username")
+                }
+            } else {
+                println("SUCCÈS: DisplayName mis à jour avec succès pour l'utilisateur anonyme: $username")
+            }
+            
+            // Retourner le résultat avec les informations user mises à jour
+            val user = auth.currentUser?.toDomainModel() ?: firebaseUser.toDomainModel()
+            println("INFO: Nom d'utilisateur final dans le domaine: ${user.username}")
+            AuthResult.Success(user)
         } catch (e: Exception) {
             AuthResult.Error("Erreur lors de la création de l'utilisateur anonyme: ${e.message}")
         }
@@ -136,7 +165,19 @@ class FirebaseAuthDataSourceImpl(
             // Retourner le résultat
             AuthResult.Success(firebaseUser.toDomainModel())
         } catch (e: Exception) {
-            AuthResult.Error("Erreur lors de la connexion: ${e.message}")
+            // Messages d'erreur plus détaillés selon le type d'erreur
+            val errorMessage = when {
+                e.message?.contains("no user record") == true -> 
+                    "Aucun compte trouvé avec cet email. Veuillez vérifier votre adresse email ou créer un compte."
+                e.message?.contains("password is invalid") == true -> 
+                    "Mot de passe incorrect. Veuillez réessayer."
+                e.message?.contains("blocked all requests") == true || e.message?.contains("network error") == true ->
+                    "Problème de connexion réseau. Veuillez vérifier votre connexion internet et réessayer."
+                e.message?.contains("too many unsuccessful login attempts") == true ->
+                    "Trop de tentatives de connexion échouées. Veuillez réessayer plus tard."
+                else -> "Erreur lors de la connexion: ${e.message}"
+            }
+            AuthResult.Error(errorMessage)
         }
     }
 
@@ -189,9 +230,27 @@ class FirebaseAuthDataSourceImpl(
      * Convertit un FirebaseUser en modèle de domaine User
      */
     private fun FirebaseUser.toDomainModel(): User {
+        // Récupérer le nom d'utilisateur stocké localement (pour les utilisateurs anonymes)
+        val storedUsername = userPreferencesDataStore.getCurrentUserNameSync()
+        
+        // Déterminer le meilleur nom d'utilisateur à utiliser
+        val finalUsername: String = when {
+            // Si c'est un utilisateur anonyme et que nous avons un nom stocké, utiliser ce nom
+            isAnonymous && storedUsername.isNotEmpty() -> storedUsername
+
+            // Si un displayName existe (défini via updateProfile), l'utiliser
+            displayName != null -> displayName
+
+            // Si l'utilisateur a un email, utiliser la partie avant @
+            email != null -> email?.substringBefore('@')
+
+            // En dernier recours, utiliser "Utilisateur anonyme"
+            else -> "Utilisateur anonyme"
+        }.toString()
+        
         return User(
             id = uid,
-            username = displayName ?: email?.substringBefore('@') ?: "Utilisateur",
+            username = finalUsername,
             email = email,
             isPremium = false,
             preferences = UserPreferences() // Les préférences seront récupérées séparément

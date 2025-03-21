@@ -379,8 +379,20 @@ private fun TodoCard(
     todo: Todo,
     onStatusChange: (Boolean) -> Unit
 ) {
-    val accentColor =
-        if (todo.partyColor != null) Color(todo.partyColor) else MaterialTheme.colorScheme.primary
+    val accentColor = remember(todo.partyId) {
+        when {
+            todo.partyColor != null -> Color(todo.partyColor)
+            else -> {
+                val hash = todo.partyId.hashCode()
+                Color(
+                    red = (hash and 0xFF0000 shr 16) / 255f,
+                    green = (hash and 0x00FF00 shr 8) / 255f,
+                    blue = (hash and 0x0000FF) / 255f,
+                    alpha = 1f
+                )
+            }
+        }
+    }
 
     Card(
         onClick = { onStatusChange(!todo.isCompleted) },

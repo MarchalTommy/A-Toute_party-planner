@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.martodev.atoute.core.data.entity.TodoEntity
+import com.martodev.atoute.core.data.entity.TodoWithPartyColor
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -18,11 +19,29 @@ interface TodoDao {
     @Query("SELECT * FROM todos")
     fun getAllTodos(): Flow<List<TodoEntity>>
     
+    /**
+     * Récupère tous les todos avec leur couleur d'événement associé
+     */
+    @Query("SELECT t.*, p.color as partyColor FROM todos t LEFT JOIN parties p ON t.partyId = p.id")
+    fun getAllTodosWithPartyColor(): Flow<List<TodoWithPartyColor>>
+    
+    /**
+     * Récupère les todos prioritaires avec leur couleur d'événement associé
+     */
+    @Query("SELECT t.*, p.color as partyColor FROM todos t LEFT JOIN parties p ON t.partyId = p.id WHERE t.isPriority = 1")
+    fun getPriorityTodosWithPartyColor(): Flow<List<TodoWithPartyColor>>
+    
     @Query("SELECT * FROM todos WHERE isPriority = 1")
     fun getPriorityTodos(): Flow<List<TodoEntity>>
     
     @Query("SELECT * FROM todos WHERE partyId = :partyId")
     fun getTodosByPartyId(partyId: String): Flow<List<TodoEntity>>
+    
+    /**
+     * Récupère les todos d'un événement spécifique avec leur couleur
+     */
+    @Query("SELECT t.*, p.color as partyColor FROM todos t LEFT JOIN parties p ON t.partyId = p.id WHERE t.partyId = :partyId")
+    fun getTodosByPartyIdWithColor(partyId: String): Flow<List<TodoWithPartyColor>>
     
     @Query("SELECT * FROM todos WHERE partyId = :partyId")
     suspend fun getTodosByPartyIdSync(partyId: String): List<TodoEntity>

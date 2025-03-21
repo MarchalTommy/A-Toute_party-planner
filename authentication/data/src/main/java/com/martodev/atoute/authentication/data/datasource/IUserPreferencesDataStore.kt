@@ -28,6 +28,14 @@ interface IUserPreferencesDataStore {
     fun getCurrentUserName(): Flow<String?>
     
     /**
+     * Récupère le nom d'utilisateur actuel de manière synchrone 
+     * (utilisé principalement pour les conversions de modèles)
+     *
+     * @return Le nom d'utilisateur ou une chaîne vide si non trouvé
+     */
+    fun getCurrentUserNameSync(): String
+    
+    /**
      * Enregistre le nom de l'utilisateur actuel
      *
      * @param userName Nom de l'utilisateur
