@@ -5,10 +5,11 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Exclure les bases de données de la sauvegarde cloud -->
+        <exclude domain="database" path="atoute_database" />
+        <exclude domain="database" path="atoute_db" />
+        <exclude domain="file" path="datastore" />
+        <exclude domain="file" path="user_preferences.preferences_pb" />
     </cloud-backup>
     <!--
     <device-transfer>
@@ -16,4 +17,6 @@
         <exclude .../>
     </device-transfer>
     -->
+    <device-transfer>
+    </device-transfer>
 </data-extraction-rules>

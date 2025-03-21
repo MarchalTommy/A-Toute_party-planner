@@ -42,7 +42,8 @@ val authenticationDataModule = module {
             userPreferencesDataStore = get(),
             auth = get(),
             userRepository = get(),
-            syncManager = get()
+            syncManager = get(),
+            context = androidContext()
         )
     }
 } 

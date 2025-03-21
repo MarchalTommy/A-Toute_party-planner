@@ -10,4 +10,11 @@
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>
 -->
+    <!-- Exclure spécifiquement les bases de données pour qu'elles soient supprimées lors de la désinstallation -->
+    <exclude domain="database" path="atoute_database"/>
+    <exclude domain="database" path="atoute_db"/>
+    
+    <!-- Exclure également les fichiers DataStore -->
+    <exclude domain="file" path="datastore"/>
+    <exclude domain="file" path="user_preferences.preferences_pb"/>
 </full-backup-content>

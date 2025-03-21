@@ -1,5 +1,6 @@
 package com.martodev.atoute.authentication.data.repository
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.martodev.atoute.authentication.data.datasource.FirebaseAuthDataSource
 import com.martodev.atoute.authentication.data.datasource.IUserPreferencesDataStore
@@ -26,6 +27,7 @@ import kotlinx.coroutines.tasks.await
  * @property auth Instance de FirebaseAuth
  * @property userRepository Repository pour les opérations sur Firestore
  * @property syncManager Manager pour synchroniser les données avec Firestore
+ * @property context Context de l'application
  */
 class AuthRepositoryImpl(
     private val firebaseAuthDataSource: FirebaseAuthDataSource,
@@ -33,7 +35,8 @@ class AuthRepositoryImpl(
     private val userPreferencesDataStore: IUserPreferencesDataStore,
     private val auth: FirebaseAuth,
     private val userRepository: FirestoreUserRepository,
-    private val syncManager: FirestoreSyncManager
+    private val syncManager: FirestoreSyncManager,
+    private val context: Context
 ) : AuthRepository {
 
     /**
@@ -231,6 +234,34 @@ class AuthRepositoryImpl(
         // Déconnexion normale
         firebaseAuthDataSource.signOut()
         userPreferencesDataStore.clearCurrentUser()
+        
+        // Supprimer explicitement l'utilisateur de la base de données locale
+        try {
+            if (userId != null) {
+                userDao.deleteUserById(userId)
+            }
+            
+            // Pour assurer que toutes les données user sont nettoyées proprement
+            cleanupUserData()
+        } catch (e: Exception) {
+            // Si l'erreur se produit pendant le nettoyage, nous pouvons continuer
+            // mais nous devrions logger pour le débogage
+            println("Erreur lors du nettoyage des données utilisateur: ${e.message}")
+        }
+    }
+
+    /**
+     * Nettoie les données utilisateur pour assurer qu'elles ne persistent pas
+     * après une désinstallation ou une déconnexion
+     */
+    private suspend fun cleanupUserData() {
+        // Nettoyer toutes les données utilisateur potentiellement persistantes
+        context.getSharedPreferences("user_preferences", Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .apply()
+        
+        // Si nous avons d'autres SharedPreferences, nous pourrions les nettoyer ici aussi
     }
 
     /**

@@ -68,7 +68,7 @@ class ATouteApplication : Application() {
                 )
             )
         }
-
+        
         // Initialisation de la base de données avec les données mockées
         initDatabase()
     }

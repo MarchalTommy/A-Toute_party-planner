@@ -1,6 +1,11 @@
 package com.martodev.atoute.authentication.data.datasource
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import com.martodev.atoute.authentication.data.model.UserEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -51,4 +56,18 @@ interface UserDao {
      */
     @Delete
     suspend fun deleteUser(user: UserEntity)
+
+    /**
+     * Supprime un utilisateur par son ID
+     *
+     * @param id ID de l'utilisateur à supprimer
+     */
+    @Query("DELETE FROM users WHERE id = :id")
+    suspend fun deleteUserById(id: String)
+
+    /**
+     * Supprime tous les utilisateurs de la base de données
+     */
+    @Query("DELETE FROM users")
+    suspend fun deleteAllUsers()
 } 

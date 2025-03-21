@@ -2,21 +2,20 @@ package com.martodev.atoute.authentication.data.datasource
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.SharedPreferencesMigration
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
-
-/**
- * Clé pour le DataStore des préférences utilisateur
- */
-private val Context.userPreferencesDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "user_preferences"
-)
+import java.io.IOException
 
 /**
  * Gère les préférences utilisateur avec DataStore
@@ -26,10 +25,23 @@ private val Context.userPreferencesDataStore: DataStore<Preferences> by preferen
 class UserPreferencesDataStore(private val context: Context) : IUserPreferencesDataStore {
     
     companion object {
+        // Nom du fichier DataStore
+        private const val PREFERENCES_NAME = "user_preferences"
+        
         // Clés pour les préférences
         private val CURRENT_USER_ID = stringPreferencesKey("current_user_id")
         private val USER_NAME = stringPreferencesKey("user_name")
     }
+    
+    // Création sécurisée du DataStore qui respecte le cycle de vie de l'application 
+    // et sera supprimé lors de la désinstallation
+    private val dataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
+        corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+        produceFile = { context.preferencesDataStoreFile(PREFERENCES_NAME) },
+        migrations = listOf(
+            SharedPreferencesMigration(context, PREFERENCES_NAME)
+        )
+    )
     
     /**
      * Récupère l'ID de l'utilisateur actuel
@@ -37,9 +49,17 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * @return Flow contenant l'ID de l'utilisateur ou null
      */
     override fun getCurrentUserId(): Flow<String?> {
-        return context.userPreferencesDataStore.data.map { preferences ->
-            preferences[CURRENT_USER_ID]
-        }
+        return dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }
+            .map { preferences ->
+                preferences[CURRENT_USER_ID]
+            }
     }
     
     /**
@@ -48,7 +68,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * @param userId ID de l'utilisateur
      */
     override suspend fun saveCurrentUserId(userId: String) {
-        context.userPreferencesDataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[CURRENT_USER_ID] = userId
         }
     }
@@ -59,9 +79,17 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * @return Flow contenant le nom de l'utilisateur ou null
      */
     override fun getCurrentUserName(): Flow<String?> {
-        return context.userPreferencesDataStore.data.map { preferences ->
-            preferences[USER_NAME]
-        }
+        return dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }
+            .map { preferences ->
+                preferences[USER_NAME]
+            }
     }
     
     /**
@@ -70,7 +98,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * @param userName Nom de l'utilisateur
      */
     override suspend fun saveCurrentUserName(userName: String) {
-        context.userPreferencesDataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[USER_NAME] = userName
         }
     }
@@ -79,7 +107,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      * Efface les données de l'utilisateur actuel
      */
     override suspend fun clearCurrentUser() {
-        context.userPreferencesDataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences.remove(CURRENT_USER_ID)
             preferences.remove(USER_NAME)
         }
@@ -92,7 +120,6 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
      */
     override fun getCurrentUserNameSync(): String {
         try {
-            val dataStore = context.userPreferencesDataStore
             val preferences = runBlocking { dataStore.data.first() }
             return preferences[USER_NAME] ?: ""
         } catch (e: Exception) {
