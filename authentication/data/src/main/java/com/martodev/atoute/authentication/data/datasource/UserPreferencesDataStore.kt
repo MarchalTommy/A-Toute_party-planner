@@ -23,16 +23,17 @@ import java.io.IOException
  * @property context Contexte Android
  */
 class UserPreferencesDataStore(private val context: Context) : IUserPreferencesDataStore {
-    
+
     companion object {
         // Nom du fichier DataStore
         private const val PREFERENCES_NAME = "user_preferences"
-        
+
         // Clés pour les préférences
         private val CURRENT_USER_ID = stringPreferencesKey("current_user_id")
+        private val LAST_LOGGED_IN_USER_ID_KEY = stringPreferencesKey("last_logged_in_user_id")
         private val USER_NAME = stringPreferencesKey("user_name")
     }
-    
+
     // Création sécurisée du DataStore qui respecte le cycle de vie de l'application 
     // et sera supprimé lors de la désinstallation
     private val dataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
@@ -42,7 +43,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
             SharedPreferencesMigration(context, PREFERENCES_NAME)
         )
     )
-    
+
     /**
      * Récupère l'ID de l'utilisateur actuel
      *
@@ -61,7 +62,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
                 preferences[CURRENT_USER_ID]
             }
     }
-    
+
     /**
      * Enregistre l'ID de l'utilisateur actuel
      *
@@ -72,7 +73,37 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
             preferences[CURRENT_USER_ID] = userId
         }
     }
-    
+
+    /**
+     * Récupère l'ID de l'utilisateur précédent
+     *
+     * @return Flow contenant l'ID de l'utilisateur ou null
+     */
+    override fun getPreviousUserId(): Flow<String?> {
+        return dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }
+            .map { preferences ->
+                preferences[LAST_LOGGED_IN_USER_ID_KEY]
+            }
+    }
+
+    /**
+     * Enregistre l'ID de l'utilisateur précédent
+     *
+     * @param userId ID de l'utilisateur
+     */
+    override suspend fun savePreviousUserId(userId: String) {
+        dataStore.edit { preferences ->
+            preferences[LAST_LOGGED_IN_USER_ID_KEY] = userId
+        }
+    }
+
     /**
      * Récupère le nom de l'utilisateur actuel
      *
@@ -91,7 +122,7 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
                 preferences[USER_NAME]
             }
     }
-    
+
     /**
      * Enregistre le nom de l'utilisateur actuel
      *
@@ -102,17 +133,28 @@ class UserPreferencesDataStore(private val context: Context) : IUserPreferencesD
             preferences[USER_NAME] = userName
         }
     }
-    
+
     /**
      * Efface les données de l'utilisateur actuel
      */
     override suspend fun clearCurrentUser() {
         dataStore.edit { preferences ->
+            val id = preferences[CURRENT_USER_ID]
+            preferences[LAST_LOGGED_IN_USER_ID_KEY] = id ?: ""
             preferences.remove(CURRENT_USER_ID)
             preferences.remove(USER_NAME)
         }
     }
-    
+
+    /**
+     * Efface les données
+     */
+    override suspend fun clearAll() {
+        dataStore.edit { preferences ->
+            preferences.clear()
+        }
+    }
+
     /**
      * Récupère le nom d'utilisateur actuel de manière synchrone
      *

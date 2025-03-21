@@ -27,6 +27,7 @@ class DatabaseInitializer(
     companion object {
         private const val PREFS_NAME = "database_prefs"
         private const val KEY_DB_INITIALIZED = "is_db_initialized"
+        private const val KEY_DB_MIGRATED = "is_db_migrated"
     }
     
     private val prefs: SharedPreferences by lazy {
@@ -38,6 +39,7 @@ class DatabaseInitializer(
      */
     fun initializeDatabaseIfNeeded(scope: CoroutineScope) {
         val isInitialized = prefs.getBoolean(KEY_DB_INITIALIZED, false)
+        val isMigrated = prefs.getBoolean(KEY_DB_MIGRATED, false)
         
         if (!isInitialized) {
             Log.d("DatabaseInitializer", "Initialisation de la base de données")

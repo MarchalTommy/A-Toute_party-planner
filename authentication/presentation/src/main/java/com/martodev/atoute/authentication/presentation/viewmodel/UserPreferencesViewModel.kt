@@ -1,5 +1,7 @@
 package com.martodev.atoute.authentication.presentation.viewmodel
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.martodev.atoute.authentication.domain.model.AuthResult
@@ -52,7 +54,7 @@ class UserPreferencesViewModel(
         // Récupérer l'utilisateur actuel au démarrage
         viewModelScope.launch {
             getCurrentUserUseCase().collect { user ->
-                _state.update { 
+                _state.update {
                     it.copy(
                         user = user,
                         preferences = user?.preferences ?: UserPreferences()
@@ -68,41 +70,55 @@ class UserPreferencesViewModel(
      * @param preferences Nouvelles préférences
      */
     fun updatePreferences(preferences: UserPreferences) {
-        // Mise à jour optimiste de l'UI immédiatement - toujours faire cette mise à jour
-        _state.update { 
-            it.copy(
-                preferences = preferences,
-                error = null
-            ) 
-        }
-        
+
         // Si l'utilisateur n'a pas d'ID, on se contente de la mise à jour UI (mode temporaire/anonyme)
         val userId = _state.value.user?.id
         if (userId.isNullOrBlank()) {
             // On ne peut pas sauvegarder pour un utilisateur sans ID, mais l'UI est mise à jour
+            Log.e(TAG, "updatePreferences: ID SHOULD NEVER BE NULL, WATCH OUT FOR THE CRASHES!")
             return
         }
-        
-        // Si l'utilisateur a un ID, on procède à la sauvegarde en base de données
+
+        // Mise à jour optimiste de l'UI immédiatement - toujours faire cette mise à jour
+        _state.update {
+            it.copy(
+                preferences = preferences,
+                error = null,
+                isLoading = true
+            )
+        }
+
         viewModelScope.launch {
             try {
                 val result = updateUserPreferencesUseCase(userId, preferences)
-                
+
                 when (result) {
                     is AuthResult.Success -> {
-                        _state.update { 
+                        _state.update {
                             it.copy(
                                 user = result.user,
-                                preferences = result.user.preferences
+                                preferences = result.user.preferences,
+                                isLoading = false
                             )
                         }
                     }
+
                     is AuthResult.Error -> {
-                        _state.update { it.copy(error = result.message) }
+                        _state.update {
+                            it.copy(
+                                error = result.message,
+                                isLoading = false
+                            )
+                        }
                     }
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(error = "Erreur lors de la mise à jour: ${e.message}") }
+                _state.update {
+                    it.copy(
+                        error = "Erreur lors de la mise à jour: ${e.message}",
+                        isLoading = false
+                    )
+                }
             }
         }
     }
@@ -114,54 +130,55 @@ class UserPreferencesViewModel(
      */
     fun updatePremiumStatus(isPremium: Boolean) {
         // Mise à jour optimiste de l'UI
-        _state.update { 
+        _state.update {
             it.copy(
                 user = it.user?.copy(isPremium = isPremium),
                 error = null
-            ) 
+            )
         }
-        
+
         val userId = _state.value.user?.id
         if (userId.isNullOrBlank()) {
             // On ne peut pas sauvegarder pour un utilisateur sans ID
             _state.update { it.copy(error = "Vous devez être connecté pour modifier le statut premium") }
             return
         }
-        
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
-            
+
             try {
                 val result = updatePremiumStatusUseCase(userId, isPremium)
-                
+
                 when (result) {
                     is AuthResult.Success -> {
-                        _state.update { 
+                        _state.update {
                             it.copy(
                                 isLoading = false,
                                 user = result.user
                             )
                         }
                     }
+
                     is AuthResult.Error -> {
-                        _state.update { 
+                        _state.update {
                             it.copy(
-                                isLoading = false, 
+                                isLoading = false,
                                 error = result.message,
                                 // En cas d'erreur, on revient à l'état précédent
                                 user = it.user?.copy(isPremium = !isPremium)
-                            ) 
+                            )
                         }
                     }
                 }
             } catch (e: Exception) {
-                _state.update { 
+                _state.update {
                     it.copy(
                         isLoading = false,
                         error = "Erreur lors de la mise à jour: ${e.message}",
                         // En cas d'erreur, on revient à l'état précédent
                         user = it.user?.copy(isPremium = !isPremium)
-                    ) 
+                    )
                 }
             }
         }
@@ -216,7 +233,7 @@ class UserPreferencesViewModel(
     fun addAllergy(allergy: String) {
         val currentPreferences = _state.value.preferences
         val currentAllergies = currentPreferences.hasAllergies.toMutableList()
-        
+
         if (allergy.isNotBlank() && !currentAllergies.contains(allergy)) {
             currentAllergies.add(allergy)
             updatePreferences(currentPreferences.copy(hasAllergies = currentAllergies))
@@ -231,7 +248,7 @@ class UserPreferencesViewModel(
     fun removeAllergy(allergy: String) {
         val currentPreferences = _state.value.preferences
         val currentAllergies = currentPreferences.hasAllergies.toMutableList()
-        
+
         if (currentAllergies.contains(allergy)) {
             currentAllergies.remove(allergy)
             updatePreferences(currentPreferences.copy(hasAllergies = currentAllergies))
@@ -253,19 +270,19 @@ class UserPreferencesViewModel(
             _state.update { it.copy(isLoading = true) }
             try {
                 signOutUseCase()
-                _state.update { 
+                _state.update {
                     it.copy(
                         isLoading = false,
                         user = null,
                         preferences = UserPreferences()
-                    ) 
+                    )
                 }
             } catch (e: Exception) {
-                _state.update { 
+                _state.update {
                     it.copy(
                         isLoading = false,
                         error = "Erreur lors de la déconnexion: ${e.message}"
-                    ) 
+                    )
                 }
             }
         }

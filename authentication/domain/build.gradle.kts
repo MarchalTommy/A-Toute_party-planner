@@ -33,6 +33,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:domain"))
     // Kotlin
     implementation(libs.core.ktx)
     implementation(libs.kotlinx.coroutines)

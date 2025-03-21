@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.martodev.atoute.authentication.data.model.UserEntity
+import com.martodev.atoute.core.data.dao.UserDao
+import com.martodev.atoute.core.data.db.ATouteDatabase
+import com.martodev.atoute.core.data.entity.UserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -22,13 +24,13 @@ import java.io.IOException
 class UserDaoTest {
     
     private lateinit var userDao: UserDao
-    private lateinit var db: AppDatabase
-    
+    private lateinit var db: ATouteDatabase
+
     @Before
     fun createDb() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(
-            context, AppDatabase::class.java
+            context, ATouteDatabase::class.java
         ).build()
         userDao = db.userDao()
     }

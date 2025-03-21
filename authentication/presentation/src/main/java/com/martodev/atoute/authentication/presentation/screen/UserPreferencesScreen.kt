@@ -90,12 +90,6 @@ fun UserPreferencesScreen(
         }
     }
     
-    // Effet pour le debug des informations utilisateur
-    LaunchedEffect(state.user) {
-        println("UserPreferencesScreen - User state: ${state.user}")
-        println("UserPreferencesScreen - User ID: ${state.user?.id}")
-    }
-    
     // Vérification plus précise de l'état de connexion
     val isUserLoggedIn = state.user != null && !state.user?.id.isNullOrBlank()
     // Vérifier si l'utilisateur est anonyme (pas d'email)
@@ -169,37 +163,7 @@ fun UserPreferencesScreen(
                 contentPadding = PaddingValues(top = 24.dp, bottom = 80.dp), // Padding en bas pour éviter que le contenu ne soit caché par la bottom bar
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Message d'avertissement pour utilisateur non connecté
-                if (!isUserLoggedIn) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "Mode prévisualisation",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                Text(
-                                    text = "Vous n'êtes pas connecté. Vos préférences ne seront pas sauvegardées. Connectez-vous ou créez un compte pour enregistrer vos préférences.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
-                        }
-                    }
-                } else {
+
                     // Message de bienvenue pour les utilisateurs connectés
                     item {
                         Card(
@@ -210,10 +174,11 @@ fun UserPreferencesScreen(
                         ) {
                             Column(
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                horizontalAlignment = Alignment.Start,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "Bonjour, ${state.user?.username ?: "Utilisateur"}",
+                                    text = "Bonjour, ${state.user?.username}",
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -222,7 +187,6 @@ fun UserPreferencesScreen(
                                 )
                                 
                                 if (isAnonymousUser) {
-                                    Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         text = "Vous êtes connecté en mode anonyme",
                                         style = MaterialTheme.typography.bodyMedium,
@@ -234,7 +198,6 @@ fun UserPreferencesScreen(
                             }
                         }
                     }
-                }
                 
                 // Préférences alimentaires
                 item {

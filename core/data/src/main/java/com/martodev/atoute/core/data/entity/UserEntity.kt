@@ -1,9 +1,8 @@
-package com.martodev.atoute.authentication.data.model
+package com.martodev.atoute.core.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.martodev.atoute.authentication.domain.model.User
-import com.martodev.atoute.authentication.domain.model.UserPreferences
+import com.martodev.atoute.core.domain.model.CoreUser
 
 /**
  * Entité Room représentant un utilisateur dans la base de données
@@ -21,22 +20,21 @@ data class UserEntity(
     val isVegan: Boolean,
     val allergies: String // Liste d'allergies séparées par des virgules
 ) {
+
     /**
      * Convertit l'entité en modèle de domaine
      */
-    fun toDomainModel(): User {
-        return User(
+    fun toDomainCoreModel(): CoreUser {
+        return CoreUser(
             id = id,
             username = username,
             email = email,
             isPremium = isPremium,
-            preferences = UserPreferences(
-                drinksAlcohol = drinksAlcohol,
-                isHalal = isHalal,
-                isVegetarian = isVegetarian,
-                isVegan = isVegan,
-                hasAllergies = if (allergies.isBlank()) emptyList() else allergies.split(",")
-            )
+            drinksAlcohol = drinksAlcohol,
+            isHalal = isHalal,
+            isVegetarian = isVegetarian,
+            isVegan = isVegan,
+            allergies = allergies
         )
     }
 
@@ -44,18 +42,18 @@ data class UserEntity(
         /**
          * Crée une entité à partir d'un modèle de domaine
          */
-        fun fromDomainModel(user: User): UserEntity {
+        fun fromDomainCoreModel(user: CoreUser): UserEntity {
             return UserEntity(
                 id = user.id,
                 username = user.username,
                 email = user.email,
                 isPremium = user.isPremium,
-                drinksAlcohol = user.preferences.drinksAlcohol,
-                isHalal = user.preferences.isHalal,
-                isVegetarian = user.preferences.isVegetarian,
-                isVegan = user.preferences.isVegan,
-                allergies = user.preferences.hasAllergies.joinToString(",")
+                drinksAlcohol = user.drinksAlcohol,
+                isHalal = user.isHalal,
+                isVegetarian = user.isVegetarian,
+                isVegan = user.isVegan,
+                allergies = user.allergies
             )
         }
     }
-} 
+}

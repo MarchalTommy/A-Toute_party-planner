@@ -18,6 +18,7 @@ class TestUserPreferencesDataStore(
     companion object {
         // Clés pour les préférences
         private val CURRENT_USER_ID = stringPreferencesKey("current_user_id")
+        private val LAST_LOGGED_IN_USER_ID_KEY = stringPreferencesKey("last_logged_in_user_id")
         private val USER_NAME = stringPreferencesKey("user_name")
     }
     
@@ -42,7 +43,19 @@ class TestUserPreferencesDataStore(
             preferences[CURRENT_USER_ID] = userId
         }
     }
-    
+
+    override fun getPreviousUserId(): Flow<String?> {
+        return testDataStore.data.map { preferences ->
+            preferences[LAST_LOGGED_IN_USER_ID_KEY]
+        }
+    }
+
+    override suspend fun savePreviousUserId(userId: String) {
+        testDataStore.edit { preferences ->
+            preferences[LAST_LOGGED_IN_USER_ID_KEY] = userId
+        }
+    }
+
     /**
      * Récupère le nom de l'utilisateur actuel
      *
@@ -72,6 +85,15 @@ class TestUserPreferencesDataStore(
         testDataStore.edit { preferences ->
             preferences.remove(CURRENT_USER_ID)
             preferences.remove(USER_NAME)
+        }
+    }
+
+    /**
+     * Efface les données
+     */
+    override suspend fun clearAll() {
+        testDataStore.edit { preferences ->
+            preferences.clear()
         }
     }
     

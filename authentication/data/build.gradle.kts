@@ -36,6 +36,7 @@ android {
 dependencies {
     // Module domain
     implementation(project(":authentication:domain"))
+    implementation(project(":core:domain"))
     implementation(project(":core:data"))
 
     // Kotlin

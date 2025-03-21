@@ -4,12 +4,13 @@ import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.martodev.atoute.authentication.data.datasource.FirebaseAuthDataSource
 import com.martodev.atoute.authentication.data.datasource.IUserPreferencesDataStore
-import com.martodev.atoute.authentication.data.datasource.UserDao
-import com.martodev.atoute.authentication.data.model.UserEntity
 import com.martodev.atoute.authentication.domain.model.AuthResult
 import com.martodev.atoute.authentication.domain.model.User
 import com.martodev.atoute.authentication.domain.model.UserPreferences
+import com.martodev.atoute.authentication.domain.model.toDomainModel
 import com.martodev.atoute.authentication.domain.repository.AuthRepository
+import com.martodev.atoute.core.data.dao.UserDao
+import com.martodev.atoute.core.data.entity.UserEntity
 import com.martodev.atoute.core.data.firebase.model.FirestoreUser
 import com.martodev.atoute.core.data.firebase.repository.FirestoreUserRepository
 import com.martodev.atoute.core.data.firebase.sync.FirestoreSyncManager
@@ -57,7 +58,8 @@ class AuthRepositoryImpl(
                             isHalal = userEntity.isHalal,
                             isVegetarian = userEntity.isVegetarian,
                             isVegan = userEntity.isVegan,
-                            hasAllergies = userEntity.allergies.split(",").filter { it.isNotBlank() }
+                            hasAllergies = userEntity.allergies.split(",")
+                                .filter { it.isNotBlank() }
                         ),
                         isPremium = userEntity.isPremium
                     )
@@ -81,7 +83,8 @@ class AuthRepositoryImpl(
     override suspend fun createAnonymousUser(username: String): AuthResult {
         return try {
             val result = auth.signInAnonymously().await()
-            val firebaseUser = result.user ?: throw Exception("Échec de la création de l'utilisateur anonyme")
+            val firebaseUser =
+                result.user ?: throw Exception("Échec de la création de l'utilisateur anonyme")
 
             // Créer l'entité utilisateur locale
             val userEntity = UserEntity(
@@ -105,7 +108,7 @@ class AuthRepositoryImpl(
                 events = emptyMap()
             )
             userRepository.saveDocument(firestoreUser)
-            
+
             // Synchroniser les modifications avec Firestore
             syncManager.pushLocalChanges()
 
@@ -113,7 +116,7 @@ class AuthRepositoryImpl(
             userPreferencesDataStore.saveCurrentUserId(firebaseUser.uid)
             userPreferencesDataStore.saveCurrentUserName(username)
 
-            AuthResult.Success(userEntity.toDomainModel())
+            AuthResult.Success(userEntity.toDomainCoreModel().toDomainModel())
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Une erreur est survenue")
         }
@@ -133,11 +136,11 @@ class AuthRepositoryImpl(
         password: String
     ): AuthResult {
         val result = firebaseAuthDataSource.createAccount(username, email, password)
-        
+
         // Si l'authentification a réussi, sauvegarder les préférences par défaut
         if (result is AuthResult.Success) {
             saveUserPreferences(result.user.id)
-            
+
             // Créer l'utilisateur dans Firestore s'il n'existe pas déjà
             val existingUser = userRepository.getDocumentByIdSync(result.user.id)
             if (existingUser == null) {
@@ -148,11 +151,11 @@ class AuthRepositoryImpl(
                     events = emptyMap()
                 )
                 userRepository.saveDocument(firestoreUser)
-                
+
                 // Synchroniser les modifications avec Firestore
                 syncManager.pushLocalChanges()
             }
-            
+
             // Retourner l'utilisateur avec ses préférences par défaut
             // Ces préférences ont été sauvegardées en base locale par saveUserPreferences
             val defaultPrefs = UserPreferences(
@@ -162,12 +165,12 @@ class AuthRepositoryImpl(
                 isVegan = false,
                 hasAllergies = emptyList()
             )
-            
+
             return AuthResult.Success(
                 result.user.copy(preferences = defaultPrefs)
             )
         }
-        
+
         return result
     }
 
@@ -180,9 +183,25 @@ class AuthRepositoryImpl(
      */
     override suspend fun signIn(email: String, password: String): AuthResult {
         val result = firebaseAuthDataSource.signIn(email, password)
-        
+
+        val previousUserId = userPreferencesDataStore.getPreviousUserId().first() ?: ""
+
         // Si l'authentification a réussi, vérifier si l'utilisateur existe en local
         if (result is AuthResult.Success) {
+
+            // Remove old data only if user is not the same as previous
+            if (result.user.id != previousUserId) {
+                // Supprimer explicitement l'utilisateur de la base de données locale
+                try {
+                    userDao.deleteUserById(previousUserId)
+                    cleanupUserData()
+                } catch (e: Exception) {
+                    // Si l'erreur se produit pendant le nettoyage, nous pouvons continuer
+                    // mais nous devrions logger pour le débogage
+                    println("Erreur lors du nettoyage des données utilisateur: ${e.message}")
+                }
+            }
+
             // Vérifier si l'utilisateur existe déjà dans la base de données locale
             val userEntity = userDao.getUserById(result.user.id).first()
             if (userEntity == null) {
@@ -197,14 +216,15 @@ class AuthRepositoryImpl(
                             isHalal = userEntity.isHalal,
                             isVegetarian = userEntity.isVegetarian,
                             isVegan = userEntity.isVegan,
-                            hasAllergies = userEntity.allergies.split(",").filter { it.isNotBlank() }
+                            hasAllergies = userEntity.allergies.split(",")
+                                .filter { it.isNotBlank() }
                         ),
                         isPremium = userEntity.isPremium
                     )
                 )
             }
         }
-        
+
         return result
     }
 
@@ -214,15 +234,15 @@ class AuthRepositoryImpl(
     override suspend fun signOut() {
         // Vérifier si l'utilisateur est anonyme avant de le déconnecter
         val currentUser = auth.currentUser
-        val isAnonymous = currentUser?.isAnonymous ?: false
+        val isAnonymous = currentUser?.isAnonymous == true
         val userId = currentUser?.uid
-        
+
         // Si l'utilisateur est anonyme, supprimer ses données de Firestore
         if (isAnonymous && userId != null) {
             try {
                 // Supprimer l'utilisateur de Firestore
                 userRepository.deleteDocument(userId)
-                
+
                 // Supprimer l'utilisateur de Firebase Auth
                 currentUser.delete().await()
             } catch (e: Exception) {
@@ -230,24 +250,10 @@ class AuthRepositoryImpl(
                 // Logger l'erreur si nécessaire
             }
         }
-        
+
         // Déconnexion normale
         firebaseAuthDataSource.signOut()
         userPreferencesDataStore.clearCurrentUser()
-        
-        // Supprimer explicitement l'utilisateur de la base de données locale
-        try {
-            if (userId != null) {
-                userDao.deleteUserById(userId)
-            }
-            
-            // Pour assurer que toutes les données user sont nettoyées proprement
-            cleanupUserData()
-        } catch (e: Exception) {
-            // Si l'erreur se produit pendant le nettoyage, nous pouvons continuer
-            // mais nous devrions logger pour le débogage
-            println("Erreur lors du nettoyage des données utilisateur: ${e.message}")
-        }
     }
 
     /**
@@ -256,12 +262,7 @@ class AuthRepositoryImpl(
      */
     private suspend fun cleanupUserData() {
         // Nettoyer toutes les données utilisateur potentiellement persistantes
-        context.getSharedPreferences("user_preferences", Context.MODE_PRIVATE)
-            .edit()
-            .clear()
-            .apply()
-        
-        // Si nous avons d'autres SharedPreferences, nous pourrions les nettoyer ici aussi
+        userPreferencesDataStore.clearAll()
     }
 
     /**
@@ -278,7 +279,7 @@ class AuthRepositoryImpl(
         return try {
             // Récupérer l'utilisateur
             val userEntity = userDao.getUserById(userId).first()
-            
+
             // Créer ou mettre à jour l'entité utilisateur
             val updatedUser = userEntity?.copy(
                 drinksAlcohol = preferences.drinksAlcohol,
@@ -298,18 +299,18 @@ class AuthRepositoryImpl(
                     isVegan = preferences.isVegan,
                     allergies = preferences.hasAllergies.joinToString(",")
                 )
-            
+
             // Mettre à jour ou insérer l'utilisateur dans la base de données
             if (userEntity != null) {
                 userDao.updateUser(updatedUser)
             } else {
                 userDao.insertUser(updatedUser)
             }
-            
+
             // Récupérer l'utilisateur Firebase actuel
             val currentUser = firebaseAuthDataSource.getCurrentUser().first()
                 ?: return AuthResult.Error("Aucun utilisateur connecté")
-            
+
             // Retourner le résultat avec l'utilisateur mis à jour
             AuthResult.Success(currentUser.copy(preferences = preferences))
         } catch (e: Exception) {
@@ -328,7 +329,7 @@ class AuthRepositoryImpl(
         return try {
             // Récupérer l'utilisateur
             val userEntity = userDao.getUserById(userId).first()
-            
+
             // Créer ou mettre à jour l'entité utilisateur
             val updatedUser = userEntity?.copy(isPremium = isPremium)
                 ?: UserEntity(
@@ -342,25 +343,25 @@ class AuthRepositoryImpl(
                     isVegan = false,
                     allergies = ""
                 )
-            
+
             // Mettre à jour ou insérer l'utilisateur dans la base de données
             if (userEntity != null) {
                 userDao.updateUser(updatedUser)
             } else {
                 userDao.insertUser(updatedUser)
             }
-            
+
             // Récupérer l'utilisateur Firebase actuel
             val currentUser = firebaseAuthDataSource.getCurrentUser().first()
                 ?: return AuthResult.Error("Aucun utilisateur connecté")
-            
+
             // Retourner le résultat avec l'utilisateur mis à jour
             AuthResult.Success(currentUser.copy(isPremium = isPremium))
         } catch (e: Exception) {
             AuthResult.Error("Erreur lors de la mise à jour du statut premium: ${e.message}")
         }
     }
-    
+
     /**
      * Sauvegarde les préférences par défaut pour un nouvel utilisateur
      */
@@ -376,7 +377,7 @@ class AuthRepositoryImpl(
             isVegan = false,
             allergies = ""
         )
-        
+
         userDao.insertUser(userEntity)
     }
 } 

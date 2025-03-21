@@ -1,4 +1,4 @@
-package com.martodev.atoute.authentication.data.datasource
+package com.martodev.atoute.core.data.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.martodev.atoute.authentication.data.model.UserEntity
+import com.martodev.atoute.core.data.entity.UserEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -38,7 +38,7 @@ interface UserDao {
      * @param user Utilisateur à insérer
      * @return ID de l'utilisateur inséré
      */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insertUser(user: UserEntity): Long
 
     /**
@@ -70,4 +70,4 @@ interface UserDao {
      */
     @Query("DELETE FROM users")
     suspend fun deleteAllUsers()
-} 
+}

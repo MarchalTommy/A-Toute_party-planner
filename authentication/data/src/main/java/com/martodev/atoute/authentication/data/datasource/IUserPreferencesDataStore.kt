@@ -19,7 +19,21 @@ interface IUserPreferencesDataStore {
      * @param userId ID de l'utilisateur
      */
     suspend fun saveCurrentUserId(userId: String)
-    
+
+    /**
+     * Récupère l'ID de l'utilisateur précédent
+     *
+     * @return Flow contenant l'ID de l'utilisateur ou null
+     */
+    fun getPreviousUserId(): Flow<String?>
+
+    /**
+     * Enregistre l'ID de l'utilisateur précédent
+     *
+     * @param userId ID de l'utilisateur
+     */
+    suspend fun savePreviousUserId(userId: String)
+
     /**
      * Récupère le nom de l'utilisateur actuel
      *
@@ -46,4 +60,9 @@ interface IUserPreferencesDataStore {
      * Efface les données de l'utilisateur actuel
      */
     suspend fun clearCurrentUser()
+
+    /**
+     * Efface les données
+     */
+    suspend fun clearAll()
 } 

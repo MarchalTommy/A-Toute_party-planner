@@ -4,6 +4,7 @@ import com.martodev.atoute.core.data.dao.ParticipantDao
 import com.martodev.atoute.core.data.dao.PartyDao
 import com.martodev.atoute.core.data.dao.ToBuyDao
 import com.martodev.atoute.core.data.dao.TodoDao
+import com.martodev.atoute.core.data.dao.UserDao
 import com.martodev.atoute.core.data.db.ATouteDatabase
 import com.martodev.atoute.core.data.db.DatabaseInitializer
 import org.koin.android.ext.koin.androidContext
@@ -21,6 +22,7 @@ val databaseModule = module {
     single<TodoDao> { get<ATouteDatabase>().todoDao() }
     single<ToBuyDao> { get<ATouteDatabase>().toBuyDao() }
     single<ParticipantDao> { get<ATouteDatabase>().participantDao() }
+    single<UserDao> { get<ATouteDatabase>().userDao() }
     
     // Initialisation de la base de données
     single { 

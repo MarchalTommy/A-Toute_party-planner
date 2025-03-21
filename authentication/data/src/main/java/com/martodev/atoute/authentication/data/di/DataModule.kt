@@ -2,11 +2,9 @@ package com.martodev.atoute.authentication.data.di
 
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.martodev.atoute.authentication.data.datasource.AppDatabase
 import com.martodev.atoute.authentication.data.datasource.FirebaseAuthDataSource
 import com.martodev.atoute.authentication.data.datasource.FirebaseAuthDataSourceImpl
 import com.martodev.atoute.authentication.data.datasource.IUserPreferencesDataStore
-import com.martodev.atoute.authentication.data.datasource.UserDao
 import com.martodev.atoute.authentication.data.datasource.UserPreferencesDataStore
 import com.martodev.atoute.authentication.data.repository.AuthRepositoryImpl
 import com.martodev.atoute.authentication.domain.repository.AuthRepository
@@ -17,13 +15,10 @@ import org.koin.dsl.module
  * Module Koin pour la couche data du feature Authentication
  */
 val authenticationDataModule = module {
-    // Base de données Room
-    single {
-        AppDatabase.getInstance(androidContext())
-    }
+    // Note: La base de données est maintenant fournie par le module core:data
 
     // DAOs
-    single<UserDao> { get<AppDatabase>().userDao() }
+    // Note: UserDao est maintenant fourni par le module core:data
 
     // DataStore
     single<IUserPreferencesDataStore> { UserPreferencesDataStore(androidContext()) }
